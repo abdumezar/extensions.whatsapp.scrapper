@@ -3,7 +3,7 @@
   'use strict';
 
   const BASE_COLUMNS = ['country_code', 'country_name', 'phone_number', 'formatted_phone', 'is_my_contact', 'saved_name', 'public_name', 'is_business', 'is_admin'];
-  const EXTRA_COLUMNS = ['group_name', 'group_id', 'role', 'username', 'wid', 'joined_at', 'country_iso', 'is_valid_number'];
+  const EXTRA_COLUMNS = ['group_name', 'group_id', 'role', 'username', 'wid', 'joined_at', 'country_iso', 'is_valid_number', 'label', 'notes'];
 
   // A cell that a spreadsheet would evaluate as a formula gets a leading
   // apostrophe. Exception: "+<digits/spaces/dashes/parens>" is a phone number,
