@@ -20,6 +20,7 @@ node test/phone.test.js    # pure-node, requires nothing
 node test/theme.test.js    # pure-node; preload/controller parity, popup.html script order
 node test/format.test.js   # pure-node; TSV, xlsx (walked as a real zip) and vCard
 node test/i18n.test.js     # pure-node; en/ar parity, warning codes, keys used by the markup
+node test/analytics.test.js # pure-node; the dashboard maths and the CSV reader
 node test/e2e.js           # loads the extension in Chromium against test/fixtures/mock-whatsapp.html
 ```
 
@@ -74,12 +75,35 @@ The MAIN↔ISOLATED bridge is nonce-gated: the content script generates a nonce,
 the *first* nonce it sees and ignores all others, so a hostile page script can't impersonate the
 popup. Replies are posted to `window.location.origin`, never `*`.
 
+## Four execution contexts, one read path
+
+Beyond the three worlds above there is now a service worker and a dashboard page, and **neither may read
+WhatsApp directly**:
+
+- **`src/background/service-worker.js`** — keyboard commands, the context menu, and the `chrome.alarms`
+  watch behind the alerts. MV3 kills it between events, so nothing is cached in module scope; state lives
+  in `chrome.storage`. It reads only by sending `dataset` to the content script in a WhatsApp tab, so the
+  read-only invariant holds transitively, and a check simply does not run when no WhatsApp tab is open.
+- **`src/dashboard/`** — a normal extension page. It cannot download a file either (it is not a tab the
+  user is looking at), so it builds the text and hands it to the content script's `saveFile` command.
+  `src/lib/analytics.js` holds every calculation as pure functions over output rows, which is what makes
+  the whole dashboard testable in node.
+
+Chart colour on the dashboard is not a matter of taste. The joins/leaves pair is the only categorical
+palette in the project and was validated with the dataviz skill's script in both modes (`--pairs all`);
+everything else encodes magnitude and is therefore one hue at varying alpha. The values and the reasoning
+are in a comment at the top of `dashboard.css` — re-run the validator if they change.
+
 ## State that outlives the popup
 
 - `chrome.storage.local`: `waxOptions` (all options bar the scope), `waxSelection` (picked chat ids),
   `waxSnapshots` (`{[chatId]: {at, keys}}` — the membership baseline the joined/left line is measured
   against, written on export only, never on preview, or a preview would destroy the baseline it is
   reporting). A snapshot stores only member *keys* (`p:<phone>` or `w:<wid>`), never names.
+- `chrome.storage.local` also holds `waxLabels` (the user's own imported CSV, joined onto rows by number —
+  nothing in it comes from WhatsApp), `waxPresets` (named option sets) and `waxWatch` (which chats the
+  alarm checks). Snapshots grew a `history` array, capped at 60 points per chat, which is what the
+  timeline draws.
 - `localStorage` on the popup origin: `wax:theme` and `wax:lang`. Both must be synchronous because
   `theme-preload.js` reads them before the first paint; that is the whole reason they are not in
   `chrome.storage`.

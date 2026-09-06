@@ -33,7 +33,30 @@ If the popup says *Not connected*, reload the WhatsApp tab once (the content scr
 - **Joined / left** — each export records which members it saw, so the next preview shows
   `+12 joined · −3 left since 6 Sep`. *Only people who joined since the last export* exports just the newcomers.
   Only member keys are stored, never names. *Options → Reset the joined/left baseline* clears them.
-- **Language** — the globe button switches the popup between English and Arabic (right-to-left).
+- **Language** — the globe button switches the popup and the dashboard between English and Arabic (right-to-left).
+- **Presets** — save a set of options under a name and re-apply it in one click.
+- **Shortcuts** — Ctrl+Shift+E exports the open chat without opening the popup; Ctrl+Shift+D opens the
+  dashboard. Both are also on the right-click menu of a WhatsApp tab, and both can be rebound at
+  `chrome://extensions/shortcuts`.
+
+## The dashboard
+
+The grid button in the popup (or Ctrl+Shift+D) opens a full-tab dashboard. It reads through the same
+WhatsApp tab the popup does — nothing here makes WhatsApp do anything the export does not already do.
+
+- **Overview** — headline counts plus where the members are and when they joined.
+- **Overlap** — pick several chats and see how many people they share, who is in every one of them, and
+  export the people who are *only* in the first.
+- **Quality** — what is wrong with the list: no number, a number that fails validation, no name at all,
+  the same person twice. Each bucket exports on its own.
+- **Communities** — the community tree with sub-group sizes, plus sub-groups whose community is not loaded.
+- **Timeline** — joins and leaves per export or automatic check, with the running membership.
+- **Match a list** — paste numbers and see which are already members. Nothing is sent anywhere.
+- **Labels** — import a CSV of `phone,label,notes`; every later export carries the matching `label` and
+  `notes` columns. The table lives in this browser only.
+- **Alerts** — watch chats and get a desktop notification when someone joins or leaves, optionally naming
+  specific numbers. Checks run in the background while a WhatsApp tab is open; with no tab open, nothing
+  happens until there is one.
 
 ## Columns
 
@@ -73,6 +96,12 @@ display correctly.
   a vendored `libphonenumber-js` (max metadata), applies the filters, diffs against the last export and
   hands the rows to one of the writers in `src/lib/` — `csv.js`, `xlsx.js` (a minimal zip + SpreadsheetML
   writer, no dependencies) or `vcard.js` — before triggering the download.
+- `src/background/service-worker.js` exists only for what a closed popup cannot do: the keyboard
+  shortcuts, the context menu, and the alarm behind the alerts. It never touches WhatsApp itself —
+  every read goes through the content script, so a watch check is the same read an export is.
+- `src/dashboard/` is a normal extension page that asks the same content script for full rows, and
+  `src/lib/analytics.js` turns them into the overlap, quality and timeline answers. Every number on
+  that page is computed locally from rows the exporter already had.
 - `src/content/dom-fallback.js` is used only if the store self-test fails after a WhatsApp update: it opens
   the group-info panel, clicks *View all* and scrolls the member list. Degraded output (numbers only for
   non-contacts, no `is_business`); the popup says so in red.
@@ -114,6 +143,7 @@ node test/phone.test.js
 node test/theme.test.js
 node test/format.test.js
 node test/i18n.test.js
+node test/analytics.test.js
 node test/e2e.js        # loads the extension in Chromium against a mocked WhatsApp page
 ```
 
