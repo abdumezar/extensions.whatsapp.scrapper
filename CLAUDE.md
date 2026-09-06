@@ -18,6 +18,8 @@ There is no service worker; the popup talks to the content script directly via `
 node test/csv.test.js      # pure-node, requires nothing
 node test/phone.test.js    # pure-node, requires nothing
 node test/theme.test.js    # pure-node; preload/controller parity, popup.html script order
+node test/format.test.js   # pure-node; TSV, xlsx (walked as a real zip) and vCard
+node test/i18n.test.js     # pure-node; en/ar parity, warning codes, keys used by the markup
 node test/e2e.js           # loads the extension in Chromium against test/fixtures/mock-whatsapp.html
 ```
 
@@ -57,6 +59,13 @@ sources depending on whether WhatsApp's internals are still recognisable.
    warning the popup renders in red. **All selectors live in `dom-selectors.js`** — when WhatsApp
    changes its markup, that file is the only one to touch.
 
+`buildDataset` runs in a fixed order and the order is load-bearing: map rows → diff against the stored
+snapshot (before filtering, because "who is in this group" is a fact about the group, not about the current
+filter settings) → drop self → apply `changesOnly` → apply filters → dedupe → sort. Writers live in
+`src/lib/` (`csv.js`, `xlsx.js`, `vcard.js`) and are chosen by `opts.format`; all three are
+dependency-free, and `xlsx.js` hand-rolls a stored (uncompressed) ZIP because a browser has no synchronous
+deflate.
+
 Both content-script paths produce the *same* raw row shape (`wid`, `phone`, `isMyContact`,
 `pushname`, `isAdmin`, …), so `toOutputRow()` is shared. Keep that shape in sync across the adapter
 and the fallback.
@@ -64,6 +73,24 @@ and the fallback.
 The MAIN↔ISOLATED bridge is nonce-gated: the content script generates a nonce, the adapter binds to
 the *first* nonce it sees and ignores all others, so a hostile page script can't impersonate the
 popup. Replies are posted to `window.location.origin`, never `*`.
+
+## State that outlives the popup
+
+- `chrome.storage.local`: `waxOptions` (all options bar the scope), `waxSelection` (picked chat ids),
+  `waxSnapshots` (`{[chatId]: {at, keys}}` — the membership baseline the joined/left line is measured
+  against, written on export only, never on preview, or a preview would destroy the baseline it is
+  reporting). A snapshot stores only member *keys* (`p:<phone>` or `w:<wid>`), never names.
+- `localStorage` on the popup origin: `wax:theme` and `wax:lang`. Both must be synchronous because
+  `theme-preload.js` reads them before the first paint; that is the whole reason they are not in
+  `chrome.storage`.
+
+## Long jobs
+
+The popup and content script share one job at a time. The content script posts `WAX_PROGRESS` runtime
+messages between chats and while the DOM fallback scrolls; `cancel` sets a flag that is checked between
+chats and returned as `false` from the fallback's `onProgress`, which is the only place a big group
+actually spends time. In the popup, `setResult(text, cls, isProgress)` distinguishes progress chatter from
+an outcome, so a background preview cannot wipe the "Saved …" line.
 
 ## Conventions that matter
 
@@ -78,6 +105,13 @@ popup. Replies are posted to `window.location.origin`, never `*`.
 - **Column set** is `BASE_COLUMNS` always plus opted-in `EXTRA_COLUMNS`, in that fixed order.
   Multi-chat exports force `group_name` on. Adding a column means touching `csv.js` (the list),
   `content.js` (`toOutputRow`), and `popup.html` (the extras checkbox).
+- **Warnings are codes, not sentences.** The content script emits `{code, …params}`; `i18n.js` turns them
+  into text in the chosen language. `test/i18n.test.js` fails if a code has no sentence in both languages,
+  or if a sentence exists for a code nothing emits.
+- **The popup is bilingual and RTL-capable.** Static text carries `data-i18n`; anything whose text is
+  *state* (the status pill, the open-chat meta line, the reconciliation line) must be repainted by hand in
+  the language-switch handler, because `WAXI18n.apply()` resets every `data-i18n` node to its markup key.
+  Layout needs no RTL rules: every inset in `popup.css` is already a logical property.
 - Vendored `src/lib/libphonenumber-max.js` is a minified third-party bundle — do not edit or reformat.
 - `src/lib/*.js` must stay dependency-free of `chrome.*` so the node tests can require them.
 
