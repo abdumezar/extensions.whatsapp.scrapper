@@ -25,6 +25,8 @@
         "src/lib/libphonenumber-max.js",
         "src/lib/phone.js",
         "src/lib/csv.js",
+        "src/lib/xlsx.js",
+        "src/lib/vcard.js",
         "src/content/dom-selectors.js",
         "src/content/dom-fallback.js",
         "src/content/content.js"

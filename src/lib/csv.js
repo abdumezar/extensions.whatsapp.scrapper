@@ -3,7 +3,7 @@
   'use strict';
 
   const BASE_COLUMNS = ['country_code', 'country_name', 'phone_number', 'formatted_phone', 'is_my_contact', 'saved_name', 'public_name', 'is_business', 'is_admin'];
-  const EXTRA_COLUMNS = ['group_name', 'group_id', 'role', 'username', 'wid', 'joined_at'];
+  const EXTRA_COLUMNS = ['group_name', 'group_id', 'role', 'username', 'wid', 'joined_at', 'country_iso', 'is_valid_number'];
 
   // A cell that a spreadsheet would evaluate as a formula gets a leading
   // apostrophe. Exception: "+<digits/spaces/dashes/parens>" is a phone number,
@@ -33,6 +33,25 @@
     const lines = [cols.map(cell).join(',')];
     for (const r of rows) lines.push(cols.map((c) => cell(r[c])).join(','));
     return '\uFEFF' + lines.join('\r\n') + '\r\n';
+  }
+
+  /**
+   * Tab-separated, for the clipboard. Pasting this into Sheets or Excel lands
+   * the columns as text — no file, and none of the CSV import dialog's
+   * number-mangling. Tabs and newlines inside a value would break the row
+   * apart, so they collapse to a space; the formula guard still applies,
+   * because a pasted "=..." is evaluated just the same.
+   */
+  function toTsv(rows, extras) {
+    const cols = columnsFor(extras);
+    const flat = (v) => {
+      if (v === null || v === undefined) return '';
+      const s = typeof v === 'boolean' ? (v ? 'true' : 'false') : String(v);
+      return guard(s).replace(/[\t\r\n]+/g, ' ');
+    };
+    const lines = [cols.join('\t')];
+    for (const r of rows) lines.push(cols.map((c) => flat(r[c])).join('\t'));
+    return lines.join('\n');
   }
 
   /** Dedupe by phone when present, else by wid. Keeps the first occurrence but
@@ -76,15 +95,15 @@
     return String(s || '').normalize('NFKD').replace(/[^\w؀-ۿ]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'chat';
   }
 
-  function filename(title, count, when) {
+  function filename(title, count, when, ext) {
     const d = when || new Date();
     const p = (n) => String(n).padStart(2, '0');
     const stamp = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}`;
     const base = count > 1 ? `wa-roster_multi_${count}-chats` : `wa-roster_${slug(title)}`;
-    return `${base}_${stamp}.csv`;
+    return `${base}_${stamp}.${ext || 'csv'}`;
   }
 
-  const api = { BASE_COLUMNS, EXTRA_COLUMNS, columnsFor, toCsv, dedupe, sortRows, filename, guard, slug };
+  const api = { BASE_COLUMNS, EXTRA_COLUMNS, columnsFor, toCsv, toTsv, dedupe, sortRows, filename, guard, slug };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.WAXCsv = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
