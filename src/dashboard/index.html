@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="color-scheme" content="light dark">
+<title>Whatsapp Scrapper — dashboard</title>
+
+<!-- Same pre-paint theme/language script as the popup: MV3 blocks inline scripts. -->
+<script src="../popup/theme-preload.js"></script>
+
+<link rel="stylesheet" href="../assets/fonts/fonts.css">
+<link rel="stylesheet" href="../styles/tokens.css">
+<link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <img class="mark" src="../../icons/icon48.png" alt="" aria-hidden="true">
+    <div class="brand-text">
+      <h1 data-i18n="dashTitle">Dashboard</h1>
+      <div class="byline" data-i18n="byline">by abdumezar</div>
+    </div>
+  </div>
+  <div class="top-actions">
+    <span id="status" class="pill pill-muted" data-i18n="checking">Checking…</span>
+    <button id="themeBtn" class="icon-btn" type="button" title="Theme" aria-label="Theme">
+      <svg class="i-system" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3v18a9 9 0 0 0 0-18z" fill="currentColor" stroke="none"/></svg>
+      <svg class="i-light" viewBox="0 0 24 24" aria-hidden="true" hidden><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M4.2 12H2M22 12h-2.2M6.5 6.5 4.9 4.9M19.1 19.1l-1.6-1.6M17.5 6.5l1.6-1.6M4.9 19.1l1.6-1.6"/></svg>
+      <svg class="i-dark" viewBox="0 0 24 24" aria-hidden="true" hidden><path d="M20.5 14.6A8.6 8.6 0 0 1 9.4 3.5a8.6 8.6 0 1 0 11.1 11.1z"/></svg>
+    </button>
+    <button id="langBtn" class="icon-btn" type="button" data-i18n-title="language" title="Language" aria-label="Language">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3.2 9.5h17.6M3.2 14.5h17.6M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18z"/></svg>
+    </button>
+  </div>
+</header>
+
+<section id="blocker" class="blocker" hidden>
+  <p id="blockerText"></p>
+  <button id="blockerAction" class="primary" data-i18n="blockOpen">Open WhatsApp Web</button>
+</section>
+
+<main id="app" hidden>
+  <!-- The picker is shared by every view that needs rows. -->
+  <section class="picker card">
+    <div class="picker-head">
+      <h2 data-i18n="pickerTitle">Chats to analyse</h2>
+      <div class="picker-actions">
+        <input id="chatFilter" type="search" data-i18n-ph="filterGroups" placeholder="Filter groups…" autocomplete="off">
+        <button id="selectAll" class="text-btn" type="button" data-i18n="selectAll">Select all</button>
+        <button id="selectNone" class="text-btn" type="button" data-i18n="selectNone">None</button>
+        <button id="loadBtn" class="primary" type="button" data-i18n="load">Load</button>
+      </div>
+    </div>
+    <div id="chatList" class="chat-list" role="list"></div>
+    <div class="picker-foot">
+      <span id="pickSummary" class="muted" data-i18n="nothingSelected">Nothing selected</span>
+      <span id="loadState" class="muted"></span>
+    </div>
+  </section>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab active" role="tab" data-view="overview" aria-selected="true" data-i18n="tabOverview">Overview</button>
+    <button class="tab" role="tab" data-view="overlap" aria-selected="false" data-i18n="tabOverlap">Overlap</button>
+    <button class="tab" role="tab" data-view="quality" aria-selected="false" data-i18n="tabQuality">Quality</button>
+    <button class="tab" role="tab" data-view="communities" aria-selected="false" data-i18n="tabCommunities">Communities</button>
+    <button class="tab" role="tab" data-view="timeline" aria-selected="false" data-i18n="tabTimeline">Timeline</button>
+    <button class="tab" role="tab" data-view="match" aria-selected="false" data-i18n="tabMatch">Match a list</button>
+    <button class="tab" role="tab" data-view="labels" aria-selected="false" data-i18n="tabLabels">Labels</button>
+    <button class="tab" role="tab" data-view="watch" aria-selected="false" data-i18n="tabWatch">Alerts</button>
+  </nav>
+
+  <!-- ---------- overview ---------- -->
+  <section class="view" data-view="overview">
+    <div id="tiles" class="tiles"></div>
+    <div class="grid-2">
+      <figure class="card chart">
+        <figcaption>
+          <h3 data-i18n="chartCountries">Where the members are</h3>
+          <p class="muted" data-i18n="chartCountriesNote">Rows by calling code. The long tail is folded into one bar.</p>
+        </figcaption>
+        <div id="countryChart"></div>
+      </figure>
+      <figure class="card chart">
+        <figcaption>
+          <h3 data-i18n="chartJoinMonths">When they joined</h3>
+          <p class="muted" data-i18n="chartJoinMonthsNote">Only members whose join date WhatsApp still holds.</p>
+        </figcaption>
+        <div id="joinChart"></div>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ---------- overlap ---------- -->
+  <section class="view" data-view="overlap" hidden>
+    <div class="card">
+      <h3 data-i18n="overlapTitle">Who is in more than one chat</h3>
+      <p class="muted" data-i18n="overlapNote">Pick two or more chats above. Shared counts are people, deduplicated by number.</p>
+      <div id="overlapSummary" class="tiles"></div>
+      <div class="table-wrap"><table id="overlapTable"><thead></thead><tbody></tbody></table></div>
+      <div class="row-actions">
+        <button id="exportOverlap" class="tonal" type="button" data-i18n="exportOverlapCsv">Export the matrix</button>
+        <button id="exportOnly" class="tonal" type="button" data-i18n="exportOnlyIn">Export "only in the first chat"</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------- quality ---------- -->
+  <section class="view" data-view="quality" hidden>
+    <div class="card">
+      <h3 data-i18n="qualityTitle">What is wrong with this list</h3>
+      <div id="qualityTiles" class="tiles"></div>
+      <div id="qualityBuckets"></div>
+    </div>
+  </section>
+
+  <!-- ---------- communities ---------- -->
+  <section class="view" data-view="communities" hidden>
+    <div class="card">
+      <h3 data-i18n="commTitle">Communities and their sub-groups</h3>
+      <p class="muted" data-i18n="commNote">Sizes are what WhatsApp reports, before deduplication.</p>
+      <div id="communityTree"></div>
+    </div>
+  </section>
+
+  <!-- ---------- timeline ---------- -->
+  <section class="view" data-view="timeline" hidden>
+    <div class="card">
+      <h3 data-i18n="timelineTitle">Joins and leaves over time</h3>
+      <p class="muted" data-i18n="timelineNote">One point per export or automatic check. Only counts are stored, never names.</p>
+      <label class="field"><span data-i18n="timelinePick">Chat</span>
+        <select id="timelineChat"></select>
+      </label>
+      <div id="timelineChart"></div>
+      <div class="table-wrap"><table id="timelineTable"><thead></thead><tbody></tbody></table></div>
+      <div class="row-actions">
+        <button id="clearHistory" class="tonal" type="button" data-i18n="clearHistory">Clear the history</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------- match a list ---------- -->
+  <section class="view" data-view="match" hidden>
+    <div class="card">
+      <h3 data-i18n="matchTitle">Check a list against the loaded chats</h3>
+      <p class="muted" data-i18n="matchNote">Paste numbers, one per line or comma separated. Nothing is sent anywhere.</p>
+      <textarea id="matchInput" rows="6" data-i18n-ph="matchPlaceholder" placeholder="+20 100 123 4567&#10;966501234567"></textarea>
+      <div class="row-actions">
+        <button id="matchRun" class="primary" type="button" data-i18n="matchRun">Check</button>
+        <button id="exportMissing" class="tonal" type="button" data-i18n="exportMissing">Export the ones not in the group</button>
+      </div>
+      <div id="matchTiles" class="tiles"></div>
+      <div class="table-wrap"><table id="matchTable"><thead></thead><tbody></tbody></table></div>
+    </div>
+  </section>
+
+  <!-- ---------- labels ---------- -->
+  <section class="view" data-view="labels" hidden>
+    <div class="card">
+      <h3 data-i18n="labelsTitle">Your own labels</h3>
+      <p class="muted" data-i18n="labelsNote">Import a CSV of phone,label,notes. Every future export carries the matching label and notes columns. The table lives in this browser only.</p>
+      <div class="row-actions">
+        <input id="labelsFile" type="file" accept=".csv,.txt,text/csv,text/plain" hidden>
+        <button id="labelsPick" class="primary" type="button" data-i18n="labelsImport">Import a CSV</button>
+        <button id="labelsClear" class="tonal" type="button" data-i18n="labelsClear">Clear them</button>
+      </div>
+      <div id="labelsState" class="muted"></div>
+      <div class="table-wrap"><table id="labelsTable"><thead></thead><tbody></tbody></table></div>
+    </div>
+  </section>
+
+  <!-- ---------- alerts ---------- -->
+  <section class="view" data-view="watch" hidden>
+    <div class="card">
+      <h3 data-i18n="watchTitle">Watch chats for changes</h3>
+      <p class="muted" data-i18n="watchNote">Checks run in the background while a WhatsApp tab is open, and notify you when someone joins or leaves.</p>
+      <div id="watchChats" class="chat-list" role="list"></div>
+      <div class="grid-2">
+        <label class="field"><span data-i18n="watchInterval">Check every</span>
+          <select id="watchInterval">
+            <option value="60">1 h</option>
+            <option value="180">3 h</option>
+            <option value="360" selected>6 h</option>
+            <option value="720">12 h</option>
+            <option value="1440">24 h</option>
+          </select>
+        </label>
+        <label class="field"><span data-i18n="watchPeople">Tell me about these numbers</span>
+          <input id="watchPeople" type="text" data-i18n-ph="watchPeoplePlaceholder" placeholder="201001234567, 966501234567" autocomplete="off">
+        </label>
+      </div>
+      <label class="check"><input type="checkbox" id="watchJoins" checked> <span data-i18n="watchJoins">Notify when someone joins</span></label>
+      <label class="check"><input type="checkbox" id="watchLeaves" checked> <span data-i18n="watchLeaves">Notify when someone leaves</span></label>
+      <div class="row-actions">
+        <button id="watchSave" class="primary" type="button" data-i18n="watchSave">Save</button>
+        <button id="watchNow" class="tonal" type="button" data-i18n="watchRunNow">Check now</button>
+      </div>
+      <div id="watchState" class="muted"></div>
+    </div>
+  </section>
+
+  <div id="toast" class="toast" hidden></div>
+</main>
+
+<script src="../lib/analytics.js"></script>
+<script src="../lib/csvparse.js"></script>
+<script src="../lib/csv.js"></script>
+<script src="../popup/i18n.js"></script>
+<script src="../popup/theme.js"></script>
+<script src="dashboard.js"></script>
+</body>
+</html>
