@@ -87,7 +87,7 @@ const assert = require('assert');
   await popup.waitForSelector('.chat-row');
   const rows = await popup.evaluate(() => [...document.querySelectorAll('.chat-row')].map((r) => r.querySelector('.t').firstChild.textContent + '|' + (r.classList.contains('sub') ? 'sub' : 'top')));
   console.log('chat list:', rows);
-  assert.deepStrictEqual(rows, ['Announcements|sub','Sub Two|sub','Test Community|top','Test Group / 2026|top'].sort((a,b)=>0) && rows.length === 4 ? rows : rows, rows);
+  assert.deepStrictEqual(rows.slice().sort(), ['Announcements|sub', 'Sub Two|sub', 'Test Community|top', 'Test Group / 2026|top']);
   await popup.evaluate(() => { const cb = [...document.querySelectorAll('.chat-row')].find((r) => r.textContent.includes('Test Community')).querySelector('input'); cb.click(); });
   await popup.waitForFunction(() => /rows/.test(document.getElementById('recon').textContent) && !/Reading/.test(document.getElementById('recon').textContent), null, { timeout: 8000 });
   let recon2 = await popup.evaluate(() => document.getElementById('recon').textContent);
@@ -101,6 +101,50 @@ const assert = require('assert');
   assert.match(recon2, /2 chats · 12 members per WhatsApp · 7 rows/);
   const headers2 = await popup.evaluate(() => [...document.querySelectorAll('#previewTable th')].map((t) => t.textContent));
   assert.ok(headers2.includes('group_name'), 'multi-chat forces group_name');
+
+  // ---- filters, clipboard and the other two formats ----------------------
+  await popup.click('.tab[data-scope="active"]');
+  await popup.waitForFunction(() => /rows/.test(document.getElementById('recon').textContent), null, { timeout: 8000 });
+
+  // "admins only" must cut the row set down and say how many it dropped.
+  await popup.evaluate(() => { document.querySelector('#filters input[data-filter="adminsOnly"]').click(); });
+  await popup.waitForFunction(() => /filtered out/.test(document.getElementById('recon').textContent), null, { timeout: 8000 });
+  const filtered = await popup.evaluate(() => document.getElementById('recon').textContent);
+  console.log('filtered:', filtered);
+  assert.match(filtered, /\b2 rows/, 'only the two admins survive');
+  assert.match(filtered, /filtered out/);
+  await popup.evaluate(() => { document.querySelector('#filters input[data-filter="adminsOnly"]').click(); });
+  await popup.waitForFunction(() => !/filtered out/.test(document.getElementById('recon').textContent), null, { timeout: 8000 });
+
+  // Clipboard. Reading it back needs a permission the extension origin may not
+  // be granted in every Chromium build, so the write is asserted through the
+  // popup's own message and the content check runs only if the read works.
+  try { await ctx.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: `chrome-extension://${id}` }); } catch (e) { console.log('clipboard permission:', e.message); }
+  await popup.click('#copyBtn');
+  await popup.waitForFunction(() => /rows/.test(document.getElementById('result').textContent), null, { timeout: 8000 });
+  const copyMsg = await popup.evaluate(() => document.getElementById('result').textContent);
+  assert.match(copyMsg, /^Copied 7 rows/, 'the popup reports what it copied');
+  const tsv = await popup.evaluate(() => navigator.clipboard.readText().catch(() => null));
+  if (tsv === null) console.log('clipboard readback unavailable — skipped the content check');
+  else {
+    assert.ok(tsv.split('\n')[0].includes('country_code\tcountry_name'), 'tab separated header');
+    assert.strictEqual(tsv.split('\n').length, 8, '7 rows + header');
+    assert.ok(tsv.includes('\t201001234567\t'), 'phone unquoted and intact');
+  }
+
+  for (const [format, ext, check] of [
+    ['xlsx', 'xlsx', (buf) => assert.deepStrictEqual([...buf.slice(0, 2)], [0x50, 0x4b], 'xlsx is a zip')],
+    ['vcf', 'vcf', (buf) => assert.ok(buf.toString('utf8').startsWith('BEGIN:VCARD'), 'vcf starts a card')],
+  ]) {
+    await popup.selectOption('#format', format);
+    const pending = page.waitForEvent('download', { timeout: 8000 });
+    await popup.click('#exportBtn');
+    const file = await pending;
+    assert.ok(file.suggestedFilename().endsWith('.' + ext), `${format} lands as .${ext}`);
+    check(fs.readFileSync(await file.path()));
+    console.log('downloaded:', file.suggestedFilename());
+  }
+  await popup.selectOption('#format', 'csv');
 
   await ctx.close();
   if (errors.length) { console.log('ERRORS:', errors); process.exit(1); }
