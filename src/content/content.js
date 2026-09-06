@@ -13,6 +13,10 @@
      error — it is what the popup uses to warn that the internals are untested. */
   const VERIFIED_VERSION = '2.3000.1046916940';
   const SNAPSHOT_KEY = 'waxSnapshots';
+  const LABELS_KEY = 'waxLabels';
+  /* How many snapshots of one chat to keep. At one export a day that is two
+     months of timeline, and it bounds what a heavy user can put in storage. */
+  const HISTORY_LIMIT = 60;
   const pending = new Map();
 
   // ---------- page bridge ----------
@@ -140,13 +144,40 @@
   }
 
   /** Only member *keys* are stored, never names or numbers beyond the key
-   *  itself — enough to count who came and went, and nothing more. */
-  async function saveSnapshots(perChat) {
+   *  itself — enough to count who came and went, and nothing more. Each save
+   *  also appends one point to that chat's history, which is what the dashboard
+   *  timeline draws; the key list is replaced, so storage stays flat per chat. */
+  async function saveSnapshots(perChat, diffs, titles) {
     try {
       const all = await loadSnapshots();
-      for (const [id, keys] of perChat) all[id] = { at: new Date().toISOString(), keys };
+      const at = new Date().toISOString();
+      for (const [id, keys] of perChat) {
+        const prev = all[id] || {};
+        const d = (diffs && diffs.get(id)) || null;
+        const history = (Array.isArray(prev.history) ? prev.history : []).slice(-(HISTORY_LIMIT - 1));
+        history.push({ at, size: keys.length, joined: d ? d.joined : 0, left: d ? d.left : 0 });
+        all[id] = { at, keys, history, title: (titles && titles.get(id)) || prev.title || id };
+      }
       await chrome.storage.local.set({ [SNAPSHOT_KEY]: all });
     } catch (e) {}
+  }
+
+  /** The user's own labels, imported from a CSV in the dashboard and joined on
+   *  by number. Nothing in this table comes from WhatsApp. */
+  async function loadLabels() {
+    try { const o = await chrome.storage.local.get(LABELS_KEY); return (o[LABELS_KEY] && o[LABELS_KEY].labels) || {}; }
+    catch (e) { return {}; }
+  }
+
+  function applyLabels(rows, labels) {
+    let hits = 0;
+    for (const r of rows) {
+      const hit = labels && r.phone_number ? labels[r.phone_number] : null;
+      r.label = hit ? hit.label || '' : '';
+      r.notes = hit ? hit.notes || '' : '';
+      if (hit) hits++;
+    }
+    return hits;
   }
 
   function diffAgainst(snapshot, keys) {
@@ -239,9 +270,11 @@
     // now" is a fact about the group, not about the current filter settings.
     const snapshots = await loadSnapshots();
     let diff = null;
+    const chatDiffs = new Map();
     for (const [id, keys] of keysByChat) {
       const d = diffAgainst(snapshots[id], keys);
       if (!d) continue;
+      chatDiffs.set(id, { joined: d.joined, left: d.left, since: d.since });
       if (!diff) diff = { joined: 0, left: 0, since: d.since, chats: 0 };
       diff.joined += d.joined;
       diff.left += d.left;
@@ -259,12 +292,17 @@
     if (opts.changesOnly && diff) rows = rows.filter((r) => r._joined);
     const filtered = applyFilters(rows, opts.filters);
     rows = WAXCsv.sortRows(WAXCsv.dedupe(filtered.rows));
+    const labelled = applyLabels(rows, await loadLabels());
 
     const extras = Object.assign({}, opts.extras);
     if (chats.length > 1) extras.group_name = true;
     return {
-      mode, status, chats, rows, warnings, extras, keysByChat, diff,
-      stats: stats(rows, chats, { filtered: filtered.removed, joined: diff ? diff.joined : null, left: diff ? diff.left : null, since: diff ? diff.since : null }),
+      mode, status, chats, rows, warnings, extras, keysByChat, chatDiffs, diff,
+      titles: new Map(chats.map((c) => [c.id, c.title])),
+      stats: stats(rows, chats, {
+        filtered: filtered.removed, labelled,
+        joined: diff ? diff.joined : null, left: diff ? diff.left : null, since: diff ? diff.since : null,
+      }),
     };
   }
 
@@ -331,12 +369,59 @@
       const out = render(ds, o);
       const filename = WAXCsv.filename(ds.chats[0] ? ds.chats[0].title : 'chat', ds.chats.length, null, out.ext);
       download(out.blob, filename);
-      // The export is now the baseline the next diff is measured against.
-      await saveSnapshots(ds.keysByChat);
+      // The export is now the baseline the next diff is measured against, and
+      // one more point on the chat's timeline.
+      await saveSnapshots(ds.keysByChat, ds.chatDiffs, ds.titles);
       return {
         mode: ds.mode, filename, stats: ds.stats, bytes: out.bytes, written: out.written,
         warnings: ds.warnings.concat(out.warnings),
       };
+    },
+
+    /**
+     * Full rows, for the dashboard — the popup only ever needs ten of them.
+     * `keysByChat` comes back too so the overlap view can do set maths without
+     * re-reading every chat.
+     */
+    async dataset(opts) {
+      job = { cancelled: false };
+      const ds = await buildDataset(opts);
+      return {
+        mode: ds.mode, chats: ds.chats, warnings: ds.warnings, stats: ds.stats,
+        columns: WAXCsv.columnsFor(ds.extras), extras: ds.extras, rows: ds.rows,
+        keysByChat: [...ds.keysByChat].map(([id, keys]) => ({ id, keys })),
+      };
+    },
+
+    /** Writes a file the dashboard has already built. It cannot download one
+     *  itself: an extension page is not a tab the user is looking at. */
+    async saveFile(args) {
+      const { text, filename, mime } = args || {};
+      download(new Blob([text || ''], { type: mime || 'text/csv;charset=utf-8' }), filename || 'export.csv');
+      return { filename, bytes: (text || '').length };
+    },
+
+    /** Stored history per chat, without the key lists — the timeline needs the
+     *  counts, and shipping tens of thousands of keys to draw a bar chart is waste. */
+    async snapshots() {
+      const all = await loadSnapshots();
+      return Object.entries(all).map(([id, s]) => ({
+        id, title: s.title || id, at: s.at,
+        size: Array.isArray(s.keys) ? s.keys.length : 0,
+        history: Array.isArray(s.history) ? s.history : [],
+      }));
+    },
+
+    async labels() {
+      try { const o = await chrome.storage.local.get(LABELS_KEY); return o[LABELS_KEY] || { labels: {}, at: null }; }
+      catch (e) { return { labels: {}, at: null }; }
+    },
+
+    async setLabels(args) {
+      const labels = (args && args.labels) || {};
+      const record = { labels, at: new Date().toISOString(), count: Object.keys(labels).length };
+      await chrome.storage.local.set({ [LABELS_KEY]: record });
+      return { count: record.count, at: record.at };
     },
 
     /** Returns the text; the popup owns the clipboard write, because that needs
