@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
 <meta charset="utf-8">
 <!-- Both schemes are handled explicitly, so Chrome must not apply its
@@ -8,9 +8,9 @@
 <title>Whatsapp Scrapper by abdumezar</title>
 
 <!--
-  Pre-paint theme, before the stylesheets so the dark class is on <html> for the
-  first paint. Deliberately not inlined: MV3 pages run under `script-src 'self'`,
-  which blocks inline scripts outright. See theme-preload.js.
+  Pre-paint theme and language, before the stylesheets so <html> already carries
+  the dark class and the right dir on the first frame. Deliberately not inlined:
+  MV3 pages run under `script-src 'self'`, which blocks inline scripts outright.
 -->
 <script src="theme-preload.js"></script>
 
@@ -25,17 +25,20 @@
   <div class="brand">
     <img class="mark" src="../../icons/icon48.png" alt="" aria-hidden="true">
     <div class="brand-text">
-      <h1>Whatsapp Scrapper</h1>
-      <div class="byline">by abdumezar</div>
+      <h1 data-i18n="appName">Whatsapp Scrapper</h1>
+      <div class="byline" data-i18n="byline">by abdumezar</div>
     </div>
   </div>
   <div class="top-actions">
-    <span id="status" class="pill pill-muted">Checking…</span>
+    <span id="status" class="pill pill-muted" data-i18n="checking">Checking…</span>
     <!-- One control, three modes: follow system → light → dark → follow system. -->
     <button id="themeBtn" class="icon-btn" type="button" title="Theme" aria-label="Theme">
       <svg class="i-system" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3v18a9 9 0 0 0 0-18z" fill="currentColor" stroke="none"/></svg>
       <svg class="i-light" viewBox="0 0 24 24" aria-hidden="true" hidden><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M4.2 12H2M22 12h-2.2M6.5 6.5 4.9 4.9M19.1 19.1l-1.6-1.6M17.5 6.5l1.6-1.6M4.9 19.1l1.6-1.6"/></svg>
       <svg class="i-dark" viewBox="0 0 24 24" aria-hidden="true" hidden><path d="M20.5 14.6A8.6 8.6 0 0 1 9.4 3.5a8.6 8.6 0 1 0 11.1 11.1z"/></svg>
+    </button>
+    <button id="langBtn" class="icon-btn" type="button" data-i18n-title="language" title="Language" aria-label="Language">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3.2 9.5h17.6M3.2 14.5h17.6M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18z"/></svg>
     </button>
   </div>
 </header>
@@ -47,36 +50,65 @@
 
 <main id="app" hidden>
   <section class="chat-card" id="activeCard">
-    <div class="eyebrow">Open chat</div>
+    <div class="eyebrow" data-i18n="openChat">Open chat</div>
     <div class="chat-title" id="activeTitle">—</div>
     <div class="chat-meta" id="activeMeta"></div>
   </section>
 
   <nav class="tabs" role="tablist">
-    <button class="tab active" role="tab" data-scope="active" aria-selected="true">This chat</button>
-    <button class="tab" role="tab" data-scope="chats" aria-selected="false">Pick chats</button>
+    <button class="tab active" role="tab" data-scope="active" aria-selected="true" data-i18n="tabThisChat">This chat</button>
+    <button class="tab" role="tab" data-scope="chats" aria-selected="false" data-i18n="tabPickChats">Pick chats</button>
   </nav>
 
   <section id="pickPane" class="pane" hidden>
-    <input id="chatFilter" type="search" placeholder="Filter groups…" autocomplete="off">
+    <input id="chatFilter" type="search" data-i18n-ph="filterGroups" placeholder="Filter groups…" autocomplete="off">
     <div id="chatList" class="chat-list" role="list"></div>
-    <div class="pick-summary" id="pickSummary">Nothing selected</div>
+    <div class="pick-bar">
+      <div class="pick-summary" id="pickSummary">Nothing selected</div>
+      <div class="pick-buttons">
+        <button id="selectAll" class="text-btn" type="button" data-i18n="selectAll">Select all</button>
+        <button id="selectNone" class="text-btn" type="button" data-i18n="selectNone">None</button>
+      </div>
+    </div>
   </section>
 
   <details class="options">
-    <summary>Options</summary>
+    <summary data-i18n="options">Options</summary>
     <div class="opt-grid">
-      <label class="opt"><span>Communities</span>
-        <select id="communityMode">
-          <option value="announce">Announcement group (all members)</option>
-          <option value="all">Every sub-group, deduplicated</option>
+      <label class="opt"><span data-i18n="format">Format</span>
+        <select id="format">
+          <option value="csv" data-i18n="formatCsv">CSV</option>
+          <option value="xlsx" data-i18n="formatXlsx">Excel (.xlsx)</option>
+          <option value="vcf" data-i18n="formatVcf">Contacts (.vcf)</option>
         </select>
       </label>
-      <label class="opt"><span>Country names</span>
-        <select id="locale"><option value="en">English</option><option value="ar">العربية</option></select>
+      <label class="opt"><span data-i18n="communities">Communities</span>
+        <select id="communityMode">
+          <option value="announce" data-i18n="communityAnnounce">Announcement group (all members)</option>
+          <option value="all" data-i18n="communityAll">Every sub-group, deduplicated</option>
+        </select>
       </label>
-      <label class="check"><input type="checkbox" id="includeMe"> Include my own row</label>
-      <div class="opt-label">Extra columns</div>
+      <label class="opt"><span data-i18n="countryNames">Country names</span>
+        <select id="locale">
+          <option value="en" data-i18n="langEn">English</option>
+          <option value="ar" data-i18n="langAr">العربية</option>
+        </select>
+      </label>
+      <label class="check"><input type="checkbox" id="includeMe"> <span data-i18n="includeMe">Include my own row</span></label>
+
+      <div class="opt-label" data-i18n="onlyRows">Only include</div>
+      <div class="checks" id="filters">
+        <label class="check"><input type="checkbox" data-filter="adminsOnly"> <span data-i18n="filterAdmins">admins</span></label>
+        <label class="check"><input type="checkbox" data-filter="savedOnly"> <span data-i18n="filterSaved">saved contacts</span></label>
+        <label class="check"><input type="checkbox" data-filter="businessOnly"> <span data-i18n="filterBusiness">business</span></label>
+        <label class="check wide"><input type="checkbox" data-filter="withPhoneOnly"> <span data-i18n="filterWithPhone">rows with a number</span></label>
+      </div>
+      <label class="opt"><span data-i18n="filterCountries">Country codes</span>
+        <input id="countries" type="text" inputmode="numeric" data-i18n-ph="filterCountriesHint" placeholder="e.g. 20, 966" autocomplete="off">
+      </label>
+      <label class="check"><input type="checkbox" id="changesOnly"> <span data-i18n="changesOnly">Only people who joined since the last export</span></label>
+
+      <div class="opt-label" data-i18n="extraColumns">Extra columns</div>
       <div class="checks" id="extras">
         <label class="check"><input type="checkbox" data-extra="group_name"> group_name</label>
         <label class="check"><input type="checkbox" data-extra="group_id"> group_id</label>
@@ -84,23 +116,35 @@
         <label class="check"><input type="checkbox" data-extra="username"> username</label>
         <label class="check"><input type="checkbox" data-extra="wid"> wid</label>
         <label class="check"><input type="checkbox" data-extra="joined_at"> joined_at</label>
+        <label class="check"><input type="checkbox" data-extra="country_iso"> country_iso</label>
+        <label class="check wide"><input type="checkbox" data-extra="is_valid_number"> is_valid_number</label>
       </div>
-      <label class="check danger"><input type="checkbox" id="forceDom"> Force screen-reading mode (debug)</label>
+
+      <label class="check danger"><input type="checkbox" id="forceDom"> <span data-i18n="forceDom">Force screen-reading mode (debug)</span></label>
+      <div class="pick-buttons">
+        <button id="diagBtn" class="text-btn" type="button" data-i18n="diagnostics">Copy diagnostics</button>
+        <button id="resetBaseline" class="text-btn" type="button" data-i18n="resetBaseline">Reset the joined/left baseline</button>
+      </div>
     </div>
   </details>
 
   <section class="preview">
-    <div class="recon" id="recon">Preparing preview…</div>
+    <div class="recon" id="recon" data-i18n="preparing">Preparing preview…</div>
+    <div class="diff" id="diff" hidden></div>
+    <div class="note" id="note" hidden></div>
     <ul class="warnings" id="warnings" hidden></ul>
     <div class="tbl-wrap"><table id="previewTable"><thead></thead><tbody></tbody></table></div>
   </section>
 
   <footer class="actions">
-    <button id="exportBtn" class="primary" disabled>Export CSV</button>
+    <button id="exportBtn" class="primary" disabled data-i18n="exportCsv">Export</button>
+    <button id="copyBtn" class="tonal" disabled data-i18n="copy">Copy</button>
+    <button id="cancelBtn" class="text-btn" hidden data-i18n="cancel">Cancel</button>
     <div class="result" id="result"></div>
   </footer>
 </main>
 
+<script src="i18n.js"></script>
 <script src="theme.js"></script>
 <script src="popup.js"></script>
 </body>

@@ -96,7 +96,7 @@ body {
   color: rgb(var(--md-sys-color-on-surface));
   border-bottom: 1px solid rgb(var(--md-sys-color-outline-variant));
 }
-.brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1 1 auto; }
 .mark {
   width: 28px;
   height: 28px;
@@ -172,8 +172,11 @@ h1 {
 /* ---- status pill (M3 suggestion chip, non-interactive) ----------------- */
 .pill {
   /* M3 label-small */
-  flex: none;
-  max-width: 160px;
+  /* Shrinks before the app name does — the name is the identity, the build
+     number is a detail, and the full text stays in the title attribute. */
+  flex: 0 1 auto;
+  min-width: 48px;
+  max-width: 120px;
   padding: 4px 10px;
   border-radius: var(--md-sys-shape-small);
   font-size: 11px;
@@ -294,7 +297,7 @@ main {
 .pane { display: flex; flex-direction: column; gap: 8px; }
 
 /* ---- text fields (M3 outlined) ----------------------------------------- */
-input[type="search"], select {
+input[type="search"], input[type="text"], select {
   width: 100%;
   height: 40px;
   padding: 0 12px;
@@ -307,12 +310,12 @@ input[type="search"], select {
   letter-spacing: 0.25px;
   transition: border-color var(--md-sys-duration-short2) var(--md-sys-easing-standard);
 }
-input[type="search"]:hover, select:hover { border-color: rgb(var(--md-sys-color-on-surface)); }
-input[type="search"]:focus-visible, select:focus-visible {
+input[type="search"]:hover, input[type="text"]:hover, select:hover { border-color: rgb(var(--md-sys-color-on-surface)); }
+input[type="search"]:focus-visible, input[type="text"]:focus-visible, select:focus-visible {
   border-color: rgb(var(--md-sys-color-primary));
   outline-offset: 0;
 }
-input[type="search"]::placeholder { color: rgb(var(--md-sys-color-on-surface-variant)); }
+input::placeholder { color: rgb(var(--md-sys-color-on-surface-variant)); }
 
 /* Checkboxes and radios take the primary role rather than the UA accent. */
 input[type="checkbox"] {
@@ -375,12 +378,46 @@ input[type="checkbox"] {
   color: rgb(var(--md-sys-color-on-surface-variant));
   font-variant-numeric: tabular-nums;
 }
+.pick-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.pick-buttons { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
 .pick-summary {
   font-size: 12px;
   line-height: 16px;
   letter-spacing: 0.4px;
   color: rgb(var(--md-sys-color-on-surface-variant));
 }
+
+/* ---- M3 text button ---------------------------------------------------- */
+.text-btn {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--md-sys-shape-full);
+  background: none;
+  color: rgb(var(--md-sys-color-primary));
+  font-family: inherit;
+  /* M3 label-large */
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.1px;
+  cursor: pointer;
+}
+.text-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-color: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--md-sys-duration-short2) var(--md-sys-easing-standard);
+}
+.text-btn:hover::before { opacity: var(--md-sys-state-hover); }
+.text-btn:focus-visible::before { opacity: var(--md-sys-state-focus); }
+.text-btn:active::before { opacity: var(--md-sys-state-pressed); }
 
 /* ---- options ----------------------------------------------------------- */
 .options summary {
@@ -402,6 +439,7 @@ input[type="checkbox"] {
   color: rgb(var(--md-sys-color-on-surface-variant));
 }
 .checks { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px 8px; }
+.checks .wide { grid-column: 1 / -1; }
 .check { display: flex; align-items: center; gap: 8px; cursor: pointer; }
 /* Column names are literal CSV headers — monospace so they read as identifiers. */
 #extras .check {
@@ -423,9 +461,28 @@ input[type="checkbox"] {
 }
 .recon.mismatch { color: rgb(var(--md-sys-color-warning)); }
 .recon.bad { color: rgb(var(--md-sys-color-error)); }
+/* Membership change since the last export — a finding, not a warning. */
+.diff {
+  align-self: start;
+  padding: 4px 10px;
+  border-radius: var(--md-sys-shape-small);
+  background: rgb(var(--md-sys-color-secondary-container));
+  color: rgb(var(--md-sys-color-on-secondary-container));
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0.4px;
+  font-variant-numeric: tabular-nums;
+}
+.note {
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0.4px;
+  color: rgb(var(--md-sys-color-warning));
+}
 .warnings {
   margin: 0;
-  padding: 10px 12px 10px 28px;
+  padding: 10px 12px;
+  padding-inline-start: 28px;
   border-radius: var(--md-sys-shape-small);
   background: rgb(var(--md-sys-color-warning-container));
   color: rgb(var(--md-sys-color-on-warning-container));
@@ -476,7 +533,7 @@ td.bool-true { color: rgb(var(--md-sys-color-primary)); font-weight: 500; }
 td.bool-null { color: rgb(var(--md-sys-color-on-surface-variant)); font-style: italic; }
 
 /* ---- actions ----------------------------------------------------------- */
-.actions { display: flex; align-items: center; gap: 12px; }
+.actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 /* M3 filled button: 40dp tall, full shape, label-large. */
 .primary {
   position: relative;
@@ -519,8 +576,48 @@ td.bool-null { color: rgb(var(--md-sys-color-on-surface-variant)); font-style: i
   cursor: default;
 }
 .primary:disabled::before { opacity: 0; }
+/* M3 tonal button — the secondary action next to the filled one. */
+.tonal {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  flex: none;
+  height: 40px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: var(--md-sys-shape-full);
+  background: rgb(var(--md-sys-color-secondary-container));
+  color: rgb(var(--md-sys-color-on-secondary-container));
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  letter-spacing: 0.1px;
+  cursor: pointer;
+}
+.tonal::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-color: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--md-sys-duration-short2) var(--md-sys-easing-standard);
+}
+.tonal:hover::before { opacity: var(--md-sys-state-hover); }
+.tonal:focus-visible::before { opacity: var(--md-sys-state-focus); }
+.tonal:active::before { opacity: var(--md-sys-state-pressed); }
+.tonal:disabled {
+  background: rgb(var(--md-sys-color-on-surface) / var(--md-sys-state-disabled-container));
+  color: rgb(var(--md-sys-color-on-surface) / var(--md-sys-state-disabled-content));
+  cursor: default;
+}
+.tonal:disabled::before { opacity: 0; }
+
 .result {
   min-width: 0;
+  flex: 1 1 100%;
   font-size: 12px;
   line-height: 16px;
   letter-spacing: 0.4px;
@@ -530,6 +627,25 @@ td.bool-null { color: rgb(var(--md-sys-color-on-surface-variant)); font-style: i
 }
 .result.ok { color: rgb(var(--md-sys-color-success)); }
 .result.bad { color: rgb(var(--md-sys-color-error)); }
+
+/* ---- Arabic ------------------------------------------------------------ */
+/* M3 line-heights are tuned to Roboto's Latin metrics; IBM Plex Sans Arabic
+   sits taller and its diacritics clip at those values, so the roles that carry
+   member names get roughly 1.15x leading under Arabic. Sizes and weights are
+   unchanged — only the leading moves. Layout needs no RTL rules of its own:
+   every inset here is already a logical property. */
+[lang="ar"] .chat-title { line-height: 28px; }
+[lang="ar"] .chat-meta,
+[lang="ar"] .recon,
+[lang="ar"] .diff,
+[lang="ar"] .note,
+[lang="ar"] .warnings,
+[lang="ar"] .pick-summary,
+[lang="ar"] .result { line-height: 18px; }
+[lang="ar"] .chat-row .t { line-height: 22px; }
+[lang="ar"] td { line-height: 20px; }
+[lang="ar"] .byline,
+[lang="ar"] .pill { line-height: 18px; }
 
 /* ---- scrollbars -------------------------------------------------------- */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
