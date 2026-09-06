@@ -22,4 +22,12 @@
     var dark = mode === 'dark' || (mode === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
     document.documentElement.classList.toggle('dark', dark);
   } catch (e) {}
+  // Language belongs here for the same reason: flipping to RTL after the first
+  // paint is a far uglier jump than a colour change. Kept in its own try so a
+  // failure in one preference cannot cost the other.
+  try {
+    var lang = localStorage.getItem('wax:lang') === 'ar' ? 'ar' : 'en';
+    document.documentElement.lang = lang;
+    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+  } catch (e) {}
 })();
