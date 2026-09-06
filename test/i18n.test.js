@@ -60,15 +60,28 @@ assert.strictEqual(i18n.warning('a plain sentence'), 'a plain sentence');
 assert.ok(i18n.warning({ code: 'domPartial', got: 900, reported: 945 }).includes('900'));
 
 // ---- markup --------------------------------------------------------------
-const keysInHtml = [...html.matchAll(/data-i18n(?:-title|-ph)?="([a-zA-Z]+)"/g)].map((m) => m[1]);
-assert.ok(keysInHtml.length > 30, 'the markup is actually marked up');
-for (const k of new Set(keysInHtml)) {
-  assert.notStrictEqual(en[k], undefined, `popup.html asks for the "${k}" string`);
+const dashHtml = src('dashboard', 'index.html');
+for (const [name, markup] of [['popup.html', html], ['dashboard/index.html', dashHtml]]) {
+  const keys = [...markup.matchAll(/data-i18n(?:-title|-ph)?="([a-zA-Z_]+)"/g)].map((m) => m[1]);
+  assert.ok(keys.length > 20, `${name} is actually marked up`);
+  for (const k of new Set(keys)) assert.notStrictEqual(en[k], undefined, `${name} asks for the "${k}" string`);
 }
 
-// Keys used from popup.js as t('key') must exist too.
-for (const m of src('popup', 'popup.js').matchAll(/\bt\('([a-zA-Z]+)'/g)) {
-  assert.notStrictEqual(en[m[1]], undefined, `popup.js asks for the "${m[1]}" string`);
+// Keys used from the scripts as t('key') must exist too. The trailing `)` or
+// `,` is what tells a whole key from a composed one like t('q_' + code), which
+// is checked separately below.
+for (const file of [['popup', 'popup.js'], ['dashboard', 'dashboard.js']]) {
+  for (const m of src(...file).matchAll(/\bt\('([a-zA-Z_]+)'\s*[,)]/g)) {
+    assert.notStrictEqual(en[m[1]], undefined, `${file[1]} asks for the "${m[1]}" string`);
+  }
+}
+
+// The quality buckets are named by code — t('q_' + code) — so those keys are
+// only reachable if the analytics module and the dictionary agree.
+const analytics = require('../src/lib/analytics.js');
+for (const bucket of analytics.quality([]).buckets) {
+  assert.notStrictEqual(en['q_' + bucket.code], undefined, `a name for the "${bucket.code}" quality bucket`);
+  assert.notStrictEqual(ar['q_' + bucket.code], undefined, `an arabic name for the "${bucket.code}" quality bucket`);
 }
 
 // ---- the reconciliation line the e2e test asserts on ---------------------

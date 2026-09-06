@@ -14,7 +14,8 @@
     recon: $('recon'), diff: $('diff'), note: $('note'), warnings: $('warnings'),
     thead: document.querySelector('#previewTable thead'), tbody: document.querySelector('#previewTable tbody'),
     exportBtn: $('exportBtn'), copyBtn: $('copyBtn'), cancelBtn: $('cancelBtn'), result: $('result'),
-    themeBtn: $('themeBtn'), langBtn: $('langBtn'),
+    themeBtn: $('themeBtn'), langBtn: $('langBtn'), dashBtn: $('dashBtn'),
+    presetName: $('presetName'), presetSelect: $('presetSelect'), presetSave: $('presetSave'), presetDelete: $('presetDelete'),
   };
   const KIND_KEY = { group: 'kindGroup', subgroup: 'kindSubgroup', community: 'kindCommunity', broadcast: 'kindBroadcast' };
   const kindLabel = (kind) => (KIND_KEY[kind] ? t(KIND_KEY[kind]) : kind);
@@ -123,7 +124,9 @@
 
   async function loadOptions() {
     try {
-      const { waxOptions, waxSelection } = await chrome.storage.local.get(['waxOptions', 'waxSelection']);
+      const { waxOptions, waxSelection, waxPresets } = await chrome.storage.local.get(['waxOptions', 'waxSelection', 'waxPresets']);
+      presets = waxPresets || {};
+      renderPresets();
       if (Array.isArray(waxSelection)) waxSelection.forEach((id) => selected.add(id));
       if (!waxOptions) return;
       if (waxOptions.format) el.format.value = waxOptions.format;
@@ -141,6 +144,42 @@
     const o = options();
     delete o.scope; delete o.chatIds; delete o.forceDom;
     try { chrome.storage.local.set({ waxOptions: o, waxSelection: Array.from(selected) }); } catch (e) {}
+  }
+
+  // ---------- presets ----------
+  /* A preset is the same object saveOptions writes, under a name. Applying one
+     is exactly the same code path as restoring the last-used options. */
+  let presets = {};
+
+  function renderPresets() {
+    el.presetSelect.textContent = '';
+    const names = Object.keys(presets).sort();
+    const blank = document.createElement('option');
+    blank.value = '';
+    blank.textContent = names.length ? '—' : t('presetNone');
+    el.presetSelect.appendChild(blank);
+    for (const name of names) {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      el.presetSelect.appendChild(opt);
+    }
+    el.presetDelete.disabled = !names.length;
+  }
+
+  function applyPreset(name) {
+    const p = presets[name];
+    if (!p) return;
+    if (p.format) el.format.value = p.format;
+    if (p.communityMode) el.communityMode.value = p.communityMode;
+    if (p.locale) el.locale.value = p.locale;
+    el.includeMe.checked = !!p.includeMe;
+    el.changesOnly.checked = !!p.changesOnly;
+    el.countries.value = (p.filters && p.filters.countries) || '';
+    document.querySelectorAll('#filters input[data-filter]').forEach((c) => { c.checked = !!(p.filters && p.filters[c.dataset.filter]); });
+    document.querySelectorAll('#extras input[data-extra]').forEach((c) => { c.checked = !!(p.extras && p.extras[c.dataset.extra]); });
+    saveOptions();
+    schedulePreview();
   }
 
   // ---------- rendering ----------
@@ -472,6 +511,27 @@
   el.exportBtn.addEventListener('click', doExport);
   el.copyBtn.addEventListener('click', doCopy);
   el.cancelBtn.addEventListener('click', () => { send('cancel').catch(() => {}); });
+  el.dashBtn.addEventListener('click', () => { chrome.runtime.sendMessage({ target: 'worker', cmd: 'openDashboard' }); window.close(); });
+  el.presetSelect.addEventListener('change', () => { if (el.presetSelect.value) applyPreset(el.presetSelect.value); });
+  el.presetSave.addEventListener('click', async () => {
+    const name = el.presetName.value.trim();
+    if (!name) return el.presetName.focus();
+    const o = options();
+    delete o.scope; delete o.chatIds; delete o.forceDom;
+    presets[name] = o;
+    try { await chrome.storage.local.set({ waxPresets: presets }); } catch (e) {}
+    el.presetName.value = '';
+    renderPresets();
+    el.presetSelect.value = name;
+    setResult(t('presetSaved'), 'ok');
+  });
+  el.presetDelete.addEventListener('click', async () => {
+    const name = el.presetSelect.value;
+    if (!name) return;
+    delete presets[name];
+    try { await chrome.storage.local.set({ waxPresets: presets }); } catch (e) {}
+    renderPresets();
+  });
   el.diagBtn.addEventListener('click', doDiagnostics);
   el.resetBaseline.addEventListener('click', doResetBaseline);
 

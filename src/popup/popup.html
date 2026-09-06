@@ -40,6 +40,9 @@
     <button id="langBtn" class="icon-btn" type="button" data-i18n-title="language" title="Language" aria-label="Language">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3.2 9.5h17.6M3.2 14.5h17.6M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18z"/></svg>
     </button>
+    <button id="dashBtn" class="icon-btn" type="button" data-i18n-title="openDashboard" title="Open the dashboard" aria-label="Open the dashboard">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.2" y="3.2" width="7.4" height="9.4" rx="2"/><rect x="13.4" y="3.2" width="7.4" height="5.6" rx="2"/><rect x="3.2" y="15.4" width="7.4" height="5.4" rx="2"/><rect x="13.4" y="11.6" width="7.4" height="9.2" rx="2"/></svg>
+    </button>
   </div>
 </header>
 
@@ -118,6 +121,18 @@
         <label class="check"><input type="checkbox" data-extra="joined_at"> joined_at</label>
         <label class="check"><input type="checkbox" data-extra="country_iso"> country_iso</label>
         <label class="check wide"><input type="checkbox" data-extra="is_valid_number"> is_valid_number</label>
+      </div>
+
+      <div class="opt-label" data-i18n="presets">Presets</div>
+      <label class="opt"><span data-i18n="presetName">Name for these settings</span>
+        <input id="presetName" type="text" data-i18n-ph="presetName" placeholder="Name for these settings" autocomplete="off">
+      </label>
+      <label class="opt"><span data-i18n="presets">Presets</span>
+        <select id="presetSelect"></select>
+      </label>
+      <div class="pick-buttons">
+        <button id="presetSave" class="text-btn" type="button" data-i18n="presetSave">Save these settings</button>
+        <button id="presetDelete" class="text-btn" type="button" data-i18n="presetDelete">Delete</button>
       </div>
 
       <label class="check danger"><input type="checkbox" id="forceDom"> <span data-i18n="forceDom">Force screen-reading mode (debug)</span></label>
