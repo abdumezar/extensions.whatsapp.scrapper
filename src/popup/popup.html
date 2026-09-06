@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!-- Both schemes are handled explicitly, so Chrome must not apply its
+     force-dark ("Auto Dark Mode for Web Contents") pass over the light one. -->
+<meta name="color-scheme" content="light dark">
+<title>Whatsapp Scrapper by abdumezar</title>
+
+<!--
+  Pre-paint theme, before the stylesheets so the dark class is on <html> for the
+  first paint. Deliberately not inlined: MV3 pages run under `script-src 'self'`,
+  which blocks inline scripts outright. See theme-preload.js.
+-->
+<script src="theme-preload.js"></script>
+
+<!-- Self-hosted fonts + M3 token layer, imported ahead of popup.css so the
+     cascade order is explicit. No remote origins. -->
+<link rel="stylesheet" href="../assets/fonts/fonts.css">
+<link rel="stylesheet" href="../styles/tokens.css">
+<link rel="stylesheet" href="popup.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <img class="mark" src="../../icons/icon48.png" alt="" aria-hidden="true">
+    <div class="brand-text">
+      <h1>Whatsapp Scrapper</h1>
+      <div class="byline">by abdumezar</div>
+    </div>
+  </div>
+  <div class="top-actions">
+    <span id="status" class="pill pill-muted">Checking…</span>
+    <!-- One control, three modes: follow system → light → dark → follow system. -->
+    <button id="themeBtn" class="icon-btn" type="button" title="Theme" aria-label="Theme">
+      <svg class="i-system" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3v18a9 9 0 0 0 0-18z" fill="currentColor" stroke="none"/></svg>
+      <svg class="i-light" viewBox="0 0 24 24" aria-hidden="true" hidden><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M4.2 12H2M22 12h-2.2M6.5 6.5 4.9 4.9M19.1 19.1l-1.6-1.6M17.5 6.5l1.6-1.6M4.9 19.1l1.6-1.6"/></svg>
+      <svg class="i-dark" viewBox="0 0 24 24" aria-hidden="true" hidden><path d="M20.5 14.6A8.6 8.6 0 0 1 9.4 3.5a8.6 8.6 0 1 0 11.1 11.1z"/></svg>
+    </button>
+  </div>
+</header>
+
+<section id="blocker" class="blocker" hidden>
+  <p id="blockerText"></p>
+  <button id="blockerAction" class="primary" hidden></button>
+</section>
+
+<main id="app" hidden>
+  <section class="chat-card" id="activeCard">
+    <div class="eyebrow">Open chat</div>
+    <div class="chat-title" id="activeTitle">—</div>
+    <div class="chat-meta" id="activeMeta"></div>
+  </section>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab active" role="tab" data-scope="active" aria-selected="true">This chat</button>
+    <button class="tab" role="tab" data-scope="chats" aria-selected="false">Pick chats</button>
+  </nav>
+
+  <section id="pickPane" class="pane" hidden>
+    <input id="chatFilter" type="search" placeholder="Filter groups…" autocomplete="off">
+    <div id="chatList" class="chat-list" role="list"></div>
+    <div class="pick-summary" id="pickSummary">Nothing selected</div>
+  </section>
+
+  <details class="options">
+    <summary>Options</summary>
+    <div class="opt-grid">
+      <label class="opt"><span>Communities</span>
+        <select id="communityMode">
+          <option value="announce">Announcement group (all members)</option>
+          <option value="all">Every sub-group, deduplicated</option>
+        </select>
+      </label>
+      <label class="opt"><span>Country names</span>
+        <select id="locale"><option value="en">English</option><option value="ar">العربية</option></select>
+      </label>
+      <label class="check"><input type="checkbox" id="includeMe"> Include my own row</label>
+      <div class="opt-label">Extra columns</div>
+      <div class="checks" id="extras">
+        <label class="check"><input type="checkbox" data-extra="group_name"> group_name</label>
+        <label class="check"><input type="checkbox" data-extra="group_id"> group_id</label>
+        <label class="check"><input type="checkbox" data-extra="role"> role</label>
+        <label class="check"><input type="checkbox" data-extra="username"> username</label>
+        <label class="check"><input type="checkbox" data-extra="wid"> wid</label>
+        <label class="check"><input type="checkbox" data-extra="joined_at"> joined_at</label>
+      </div>
+      <label class="check danger"><input type="checkbox" id="forceDom"> Force screen-reading mode (debug)</label>
+    </div>
+  </details>
+
+  <section class="preview">
+    <div class="recon" id="recon">Preparing preview…</div>
+    <ul class="warnings" id="warnings" hidden></ul>
+    <div class="tbl-wrap"><table id="previewTable"><thead></thead><tbody></tbody></table></div>
+  </section>
+
+  <footer class="actions">
+    <button id="exportBtn" class="primary" disabled>Export CSV</button>
+    <div class="result" id="result"></div>
+  </footer>
+</main>
+
+<script src="theme.js"></script>
+<script src="popup.js"></script>
+</body>
+</html>

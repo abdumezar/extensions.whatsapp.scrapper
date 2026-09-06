@@ -1,0 +1,544 @@
+/*
+ * Whatsapp Scrapper by abdumezar — popup styles.
+ *
+ * Material Design 3, on the same token layer as the Nashir extension
+ * (src/styles/tokens.css, seed #2FA084). Nothing here hardcodes a colour: every
+ * value resolves to an --md-sys-color-* role, which is what makes dark mode a
+ * single class flip on <html> (see theme-preload.js) with no duplicated rules.
+ *
+ * Shape, elevation, state-layer opacity and motion also come from the token
+ * layer. Type follows the M3 scale; each role is named in a comment where used
+ * because there is no Tailwind here to spell it out.
+ */
+
+/* Ground colour before the stylesheets land — --md-sys-color-surface. */
+html { background: #f5fbf6; }
+html.dark { background: #0f1512; }
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; }
+
+body {
+  width: 420px;
+  max-height: 600px;
+  overflow-y: auto;
+  background: rgb(var(--md-sys-color-surface));
+  color: rgb(var(--md-sys-color-on-surface));
+  /* Roboto for Latin, IBM Plex Sans Arabic for Arabic — each face carries a
+     unicode-range, so a mixed name like "Ahmed أحمد" resolves per character. */
+  font-family: Roboto, "IBM Plex Sans Arabic", system-ui, sans-serif;
+  /* M3 body-medium */
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: 0.25px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* M3 uses a visible focus indicator, never the UA default outline. */
+:focus-visible {
+  outline: 3px solid rgb(var(--md-sys-color-primary));
+  outline-offset: 2px;
+}
+
+::selection {
+  background: rgb(var(--md-sys-color-primary-container));
+  color: rgb(var(--md-sys-color-on-primary-container));
+}
+
+/* Users who ask their OS for more contrast: outline-variant is a deliberately
+   low-contrast divider role, promoted here to the full outline role. */
+@media (prefers-contrast: more) {
+  :root, .dark { --md-sys-color-outline-variant: var(--md-sys-color-outline); }
+  :focus-visible { outline-width: 4px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ---- state layer ------------------------------------------------------- */
+/* A translucent wash of the content colour over the container, at the spec's
+   per-state opacities. Every interactive surface composes this rather than
+   inventing its own hover colour. */
+.state-layer { position: relative; isolation: isolate; }
+.state-layer::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background-color: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--md-sys-duration-short2) var(--md-sys-easing-standard);
+}
+.state-layer:hover::before { opacity: var(--md-sys-state-hover); }
+.state-layer:focus-visible::before { opacity: var(--md-sys-state-focus); }
+.state-layer:active::before { opacity: var(--md-sys-state-pressed); }
+.state-layer:disabled::before { opacity: 0; }
+.state-layer > * { position: relative; z-index: 10; }
+
+/* ---- top app bar ------------------------------------------------------- */
+.top {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 16px;
+  background: rgb(var(--md-sys-color-surface-container));
+  color: rgb(var(--md-sys-color-on-surface));
+  border-bottom: 1px solid rgb(var(--md-sys-color-outline-variant));
+}
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.mark {
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border-radius: var(--md-sys-shape-small);
+  object-fit: contain;
+}
+.brand-text { min-width: 0; }
+h1 {
+  /* M3 title-small */
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  letter-spacing: 0.1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.byline {
+  /* M3 label-small */
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 16px;
+  letter-spacing: 0.5px;
+  color: rgb(var(--md-sys-color-on-surface-variant));
+}
+
+.top-actions { display: flex; align-items: center; gap: 4px; min-width: 0; }
+
+/* ---- M3 standard icon button (40dp target, 24dp icon) ------------------ */
+.icon-btn {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--md-sys-shape-full);
+  background: none;
+  color: rgb(var(--md-sys-color-on-surface-variant));
+  cursor: pointer;
+}
+.icon-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background-color: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--md-sys-duration-short2) var(--md-sys-easing-standard);
+}
+.icon-btn:hover::before { opacity: var(--md-sys-state-hover); }
+.icon-btn:focus-visible::before { opacity: var(--md-sys-state-focus); }
+.icon-btn:active::before { opacity: var(--md-sys-state-pressed); }
+.icon-btn svg {
+  position: relative;
+  z-index: 10;
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---- status pill (M3 suggestion chip, non-interactive) ----------------- */
+.pill {
+  /* M3 label-small */
+  flex: none;
+  max-width: 160px;
+  padding: 4px 10px;
+  border-radius: var(--md-sys-shape-small);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 16px;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pill-ok { background: rgb(var(--md-sys-color-success-container)); color: rgb(var(--md-sys-color-on-success-container)); }
+.pill-warn { background: rgb(var(--md-sys-color-warning-container)); color: rgb(var(--md-sys-color-on-warning-container)); }
+.pill-bad { background: rgb(var(--md-sys-color-error-container)); color: rgb(var(--md-sys-color-on-error-container)); }
+.pill-muted { background: rgb(var(--md-sys-color-surface-container-highest)); color: rgb(var(--md-sys-color-on-surface-variant)); }
+
+.blocker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 32px 24px;
+  text-align: center;
+  color: rgb(var(--md-sys-color-on-surface-variant));
+}
+.blocker p { margin: 0; }
+
+main {
+  padding: 12px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ---- open-chat card (M3 filled card) ----------------------------------- */
+.chat-card {
+  background: rgb(var(--md-sys-color-surface-container-low));
+  border-radius: var(--md-sys-shape-medium);
+  padding: 12px 16px;
+}
+.eyebrow {
+  /* M3 label-medium, uppercased */
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: rgb(var(--md-sys-color-on-surface-variant));
+}
+.chat-title {
+  /* M3 title-medium */
+  margin-top: 2px;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 24px;
+  letter-spacing: 0.15px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chat-meta {
+  /* M3 body-small */
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0.4px;
+  color: rgb(var(--md-sys-color-on-surface-variant));
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- primary tabs ------------------------------------------------------ */
+.tabs {
+  display: flex;
+  border-bottom: 1px solid rgb(var(--md-sys-color-outline-variant));
+}
+.tab {
+  position: relative;
+  isolation: isolate;
+  flex: 1;
+  height: 40px;
+  padding: 0 12px;
+  border: 0;
+  background: none;
+  color: rgb(var(--md-sys-color-on-surface-variant));
+  font-family: inherit;
+  /* M3 title-small */
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  letter-spacing: 0.1px;
+  cursor: pointer;
+  transition: color var(--md-sys-duration-short2) var(--md-sys-easing-standard);
+}
+.tab::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-color: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--md-sys-duration-short2) var(--md-sys-easing-standard);
+}
+.tab:hover::before { opacity: var(--md-sys-state-hover); }
+.tab:active::before { opacity: var(--md-sys-state-pressed); }
+.tab:disabled { opacity: var(--md-sys-state-disabled-content); cursor: default; }
+.tab:disabled::before { opacity: 0; }
+/* The active indicator: 3dp, full shape on its top corners, primary. */
+.tab.active { color: rgb(var(--md-sys-color-primary)); }
+.tab.active::after {
+  content: "";
+  position: absolute;
+  inset-inline: 12px;
+  bottom: -1px;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: rgb(var(--md-sys-color-primary));
+}
+
+.pane { display: flex; flex-direction: column; gap: 8px; }
+
+/* ---- text fields (M3 outlined) ----------------------------------------- */
+input[type="search"], select {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid rgb(var(--md-sys-color-outline));
+  border-radius: var(--md-sys-shape-extra-small);
+  background: rgb(var(--md-sys-color-surface));
+  color: rgb(var(--md-sys-color-on-surface));
+  font-family: inherit;
+  font-size: 14px;
+  letter-spacing: 0.25px;
+  transition: border-color var(--md-sys-duration-short2) var(--md-sys-easing-standard);
+}
+input[type="search"]:hover, select:hover { border-color: rgb(var(--md-sys-color-on-surface)); }
+input[type="search"]:focus-visible, select:focus-visible {
+  border-color: rgb(var(--md-sys-color-primary));
+  outline-offset: 0;
+}
+input[type="search"]::placeholder { color: rgb(var(--md-sys-color-on-surface-variant)); }
+
+/* Checkboxes and radios take the primary role rather than the UA accent. */
+input[type="checkbox"] {
+  accent-color: rgb(var(--md-sys-color-primary));
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  flex: none;
+}
+
+/* ---- chat picker ------------------------------------------------------- */
+.chat-list {
+  max-height: 200px;
+  overflow-y: auto;
+  border-radius: var(--md-sys-shape-medium);
+  background: rgb(var(--md-sys-color-surface-container-low));
+}
+.chat-row {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgb(var(--md-sys-color-outline-variant));
+  cursor: pointer;
+}
+.chat-row::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-color: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--md-sys-duration-short2) var(--md-sys-easing-standard);
+}
+.chat-row:hover::before { opacity: var(--md-sys-state-hover); }
+.chat-row:active::before { opacity: var(--md-sys-state-pressed); }
+.chat-row > * { position: relative; z-index: 10; }
+.chat-row:last-child { border-bottom: 0; }
+/* Sub-groups are indented under their community. Logical inset, so an RTL
+   build indents from the right without a second rule. */
+.chat-row.sub { padding-inline-start: 32px; }
+.chat-row .t { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chat-row .k {
+  /* M3 label-small */
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 16px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: rgb(var(--md-sys-color-on-surface-variant));
+}
+.chat-row .n {
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0.4px;
+  color: rgb(var(--md-sys-color-on-surface-variant));
+  font-variant-numeric: tabular-nums;
+}
+.pick-summary {
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0.4px;
+  color: rgb(var(--md-sys-color-on-surface-variant));
+}
+
+/* ---- options ----------------------------------------------------------- */
+.options summary {
+  cursor: pointer;
+  padding: 4px 0;
+  color: rgb(var(--md-sys-color-primary));
+  /* M3 label-large */
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.1px;
+}
+.options summary::marker { color: rgb(var(--md-sys-color-on-surface-variant)); }
+.opt-grid { display: flex; flex-direction: column; gap: 10px; padding: 10px 0 2px; }
+.opt { display: grid; grid-template-columns: 108px 1fr; align-items: center; gap: 8px; }
+.opt > span, .opt-label {
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0.4px;
+  color: rgb(var(--md-sys-color-on-surface-variant));
+}
+.checks { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px 8px; }
+.check { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+/* Column names are literal CSV headers — monospace so they read as identifiers. */
+#extras .check {
+  font-family: ui-monospace, "Roboto Mono", Menlo, monospace;
+  font-size: 12px;
+  letter-spacing: 0;
+}
+.check.danger { color: rgb(var(--md-sys-color-warning)); font-size: 13px; }
+
+/* ---- preview ----------------------------------------------------------- */
+.preview { display: flex; flex-direction: column; gap: 8px; }
+.recon {
+  /* M3 body-small */
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0.4px;
+  color: rgb(var(--md-sys-color-on-surface-variant));
+  font-variant-numeric: tabular-nums;
+}
+.recon.mismatch { color: rgb(var(--md-sys-color-warning)); }
+.recon.bad { color: rgb(var(--md-sys-color-error)); }
+.warnings {
+  margin: 0;
+  padding: 10px 12px 10px 28px;
+  border-radius: var(--md-sys-shape-small);
+  background: rgb(var(--md-sys-color-warning-container));
+  color: rgb(var(--md-sys-color-on-warning-container));
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0.4px;
+}
+.warnings li + li { margin-top: 4px; }
+.tbl-wrap {
+  max-height: 220px;
+  overflow: auto;
+  border: 1px solid rgb(var(--md-sys-color-outline-variant));
+  border-radius: var(--md-sys-shape-medium);
+  background: rgb(var(--md-sys-color-surface-container-lowest));
+}
+table { border-collapse: collapse; white-space: nowrap; }
+th, td {
+  padding: 6px 10px;
+  border-bottom: 1px solid rgb(var(--md-sys-color-outline-variant));
+  text-align: start;
+}
+th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: rgb(var(--md-sys-color-surface-container));
+  color: rgb(var(--md-sys-color-on-surface-variant));
+  /* M3 label-small, uppercased */
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 16px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+td {
+  /* M3 body-small. Names may be Arabic; IBM Plex Sans Arabic sits taller than
+     Roboto, so the leading is a touch above the 16px the role asks for to keep
+     diacritics from clipping. */
+  font-size: 12px;
+  line-height: 18px;
+  letter-spacing: 0.4px;
+  font-variant-numeric: tabular-nums;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+td.bool-true { color: rgb(var(--md-sys-color-primary)); font-weight: 500; }
+td.bool-null { color: rgb(var(--md-sys-color-on-surface-variant)); font-style: italic; }
+
+/* ---- actions ----------------------------------------------------------- */
+.actions { display: flex; align-items: center; gap: 12px; }
+/* M3 filled button: 40dp tall, full shape, label-large. */
+.primary {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  flex: none;
+  height: 40px;
+  padding: 0 24px;
+  border: 0;
+  border-radius: var(--md-sys-shape-full);
+  background: rgb(var(--md-sys-color-primary));
+  color: rgb(var(--md-sys-color-on-primary));
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  letter-spacing: 0.1px;
+  cursor: pointer;
+  transition: box-shadow var(--md-sys-duration-short2) var(--md-sys-easing-standard);
+}
+.primary::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-color: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--md-sys-duration-short2) var(--md-sys-easing-standard);
+}
+.primary:hover::before { opacity: var(--md-sys-state-hover); }
+.primary:focus-visible::before { opacity: var(--md-sys-state-focus); }
+.primary:active::before { opacity: var(--md-sys-state-pressed); }
+.primary:hover:not(:disabled) { box-shadow: var(--md-sys-elevation-1); }
+/* M3 disabled: container at 12% of on-surface, content at 38%. */
+.primary:disabled {
+  background: rgb(var(--md-sys-color-on-surface) / var(--md-sys-state-disabled-container));
+  color: rgb(var(--md-sys-color-on-surface) / var(--md-sys-state-disabled-content));
+  box-shadow: none;
+  cursor: default;
+}
+.primary:disabled::before { opacity: 0; }
+.result {
+  min-width: 0;
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0.4px;
+  color: rgb(var(--md-sys-color-on-surface-variant));
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.result.ok { color: rgb(var(--md-sys-color-success)); }
+.result.bad { color: rgb(var(--md-sys-color-error)); }
+
+/* ---- scrollbars -------------------------------------------------------- */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: var(--md-sys-shape-full);
+  background-clip: content-box;
+  background-color: rgb(var(--md-sys-color-outline-variant));
+}
+::-webkit-scrollbar-thumb:hover { background-color: rgb(var(--md-sys-color-outline)); }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-corner { background: transparent; }
