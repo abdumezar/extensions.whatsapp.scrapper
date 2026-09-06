@@ -1,0 +1,7 @@
+# Local session history from the Remember plugin — not part of the extension.
+.remember/
+
+# OS cruft
+Thumbs.db
+desktop.ini
+.DS_Store
