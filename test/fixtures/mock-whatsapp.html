@@ -1,0 +1,37 @@
+<!doctype html><html><head><meta charset="utf-8"><title>WhatsApp</title></head><body>
+<div id="app"><div id="main"><header><div data-testid="conversation-info-header" role="button" title="Profile details"><span data-testid="conversation-info-header-chat-title">Test Group</span></div></header></div></div>
+<script>
+// Fake store shaped like WhatsApp Web 2.3000.1046916940 — enough for the adapter's named-require path.
+(function(){
+  const Wid = (user, server) => ({ user, server, _serialized: user + '@' + server });
+  const coll = (arr) => ({ getModelsArray: () => arr, get: (id) => arr.find(m => m.id._serialized === (id._serialized || id)) });
+  const contact = (o) => Object.assign({ id: null, name: '', pushname: '', verifiedName: '', isBusiness: false, isEnterprise: false, isSmb: false, isAddressBookContact: false, phoneNumber: null, username: '' }, o);
+  const P = [];
+  const mk = (i, o) => P.push(Object.assign({ id: Wid('1000' + i, 'lid'), isAdmin: false, isSuperAdmin: false, joinTime: 1700000000 + i, contact: contact({ id: Wid('1000' + i, 'lid'), phoneNumber: Wid(o.phone, 'c.us') }) }, o.p || {}, { contact: contact(Object.assign({ id: Wid('1000' + i, 'lid'), phoneNumber: o.phone ? Wid(o.phone, 'c.us') : null }, o.c || {})) }));
+  mk(1, { phone: '201001234567', p: { isSuperAdmin: true, isAdmin: true }, c: { name: 'Owner Person', isAddressBookContact: true, pushname: 'Owner' } });
+  mk(2, { phone: '201112223334', p: { isAdmin: true }, c: { pushname: 'Ahmed "A"' } });
+  mk(3, { phone: '966501234567', c: { verifiedName: 'Riyadh Shop', isBusiness: true } });
+  mk(4, { phone: '14155550100', c: { pushname: '=SUM(1)', } });
+  mk(5, { phone: '', c: { pushname: 'Hidden Number' } });                       // LID with no mapping
+  mk(6, { phone: '201001234567', c: { pushname: 'Duplicate of owner' } });        // dedupe target
+  mk(7, { phone: '4915112345678', c: { name: 'Müller, Hans', isAddressBookContact: true, username: 'hansm' } });
+  mk(8, { phone: '201555000111', c: { pushname: 'أحمد محمد' } });
+  // "me"
+  P.push({ id: Wid('999999', 'lid'), isAdmin: false, isSuperAdmin: false, joinTime: 0, contact: contact({ id: Wid('999999','lid'), phoneNumber: Wid('201000000000','c.us'), name: 'Me' }) });
+  const gm = { isParentGroup: false, parentGroup: null, defaultSubgroup: false, generalSubgroup: false, isLidAddressingMode: true, size: P.length, participants: coll(P) };
+  const chat = { id: Wid('120363000000000001', 'g.us'), formattedTitle: 'Test Group / 2026', name: 'Test Group', active: true, groupMetadata: gm };
+  const community = { id: Wid('120363000000000002', 'g.us'), formattedTitle: 'Test Community', name: 'Test Community', active: false, groupMetadata: { isParentGroup: true, parentGroup: null, size: 0, participants: coll(P.slice(0,2)), isLidAddressingMode: true } };
+  const announce = { id: Wid('120363000000000003', 'g.us'), formattedTitle: 'Announcements', name: 'Announcements', active: false, groupMetadata: { isParentGroup: false, parentGroup: community.id, defaultSubgroup: true, size: 0, participants: coll(P), isLidAddressingMode: true } };
+  const sub2 = { id: Wid('120363000000000004', 'g.us'), formattedTitle: 'Sub Two', name: 'Sub Two', active: false, groupMetadata: { isParentGroup: false, parentGroup: community.id, defaultSubgroup: false, size: 3, participants: coll(P.slice(2,5)), isLidAddressingMode: true } };
+  const direct = { id: Wid('201234', 'lid'), formattedTitle: 'Someone', name: 'Someone', active: false, groupMetadata: null };
+  const modules = {
+    WAWebChatCollection: { ChatCollection: coll([direct, chat, community, announce, sub2]) },
+    WAWebContactCollection: { ContactCollection: coll(P.map(p => p.contact)) },
+    WAWebApiContact: { lidPnCache: {}, getPhoneNumber: () => null },
+    WAWebUserPrefsMeUser: { getMaybeMePnUser: () => Wid('201000000000','c.us'), getMaybeMeLidUser: () => Wid('999999','lid') },
+    __debug: { modulesMap: {} },
+  };
+  window.require = (n) => { if (!(n in modules)) throw new Error('no module ' + n); return modules[n]; };
+  window.Debug = { VERSION: '2.3000.mock' };
+})();
+</script></body></html>
