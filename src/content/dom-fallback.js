@@ -78,7 +78,9 @@ const WAXDom = (() => {
     let stalls = 0, steps = 0;
     while (steps < 5000 && stalls < 3) {
       take(await waitRendered());
-      if (onProgress) onProgress(seen.size, scroller.scrollTop / Math.max(1, scroller.scrollHeight));
+      // A progress callback returning false is how the popup cancels a long
+      // scroll: this loop is where a big group spends all of its time.
+      if (onProgress && onProgress(seen.size, scroller.scrollTop / Math.max(1, scroller.scrollHeight)) === false) break;
       const before = scroller.scrollTop;
       if (before + scroller.clientHeight >= scroller.scrollHeight - 2) break;
       scroller.scrollTop = before + scroller.clientHeight - 80;
@@ -93,7 +95,7 @@ const WAXDom = (() => {
 
   /** Scrape the currently open group through the UI. Restores the UI afterwards. */
   async function scrapeActiveChat(onProgress) {
-    const warnings = ['Store unavailable — data read from the screen. Numbers are only visible for people not in your contacts; is_business is unknown.'];
+    const warnings = [{ code: 'domMode' }];
     if (!canRun()) throw Object.assign(new Error('No chat is open'), { code: 'NO_ACTIVE' });
     const titleEl = q('#main header [data-testid="conversation-info-header-chat-title"]') || q('#main header span[title]');
     const title = titleEl ? titleEl.textContent.trim() : 'chat';
@@ -136,7 +138,7 @@ const WAXDom = (() => {
       if (openedDrawer) { const c = q(S.drawerCloseButton); if (c) c.click(); }
     } catch (e) {}
 
-    if (reported && rows.length < reported) warnings.push(`Read ${rows.length} of ${reported} members — scroll may have skipped rows; try again with the WhatsApp tab visible.`);
+    if (reported && rows.length < reported) warnings.push({ code: 'domPartial', got: rows.length, reported });
     return {
       chat: { id: 'dom:' + title, title, kind: 'group', reportedSize: reported, participantCount: rows.length, isParentGroup: false, parentGroup: '', isLidAddressingMode: null, active: true },
       rows, warnings,
