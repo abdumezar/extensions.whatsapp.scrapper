@@ -3,10 +3,13 @@ const { chromium } = require('playwright');
 const path = require('path');
 const fs = require('fs');
 const assert = require('assert');
+const os = require('os');
 
 (async () => {
   const ext = path.resolve(__dirname, '..');
-  const userDir = fs.mkdtempSync('/tmp/wax-prof-');
+  // os.tmpdir(), not '/tmp': on Windows a bare '/tmp' resolves against the
+  // current drive, so the profile lands on whichever drive the repo is on.
+  const userDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wax-prof-'));
   const ctx = await chromium.launchPersistentContext(userDir, {
     headless: true, channel: 'chromium',
     args: [`--disable-extensions-except=${ext}`, `--load-extension=${ext}`],
@@ -57,7 +60,7 @@ const assert = require('assert');
   const active = await popup.evaluate(() => document.getElementById('activeTitle').textContent + ' | ' + document.getElementById('activeMeta').textContent);
   const headers = await popup.evaluate(() => [...document.querySelectorAll('#previewTable th')].map((t) => t.textContent));
   console.log({ status, active, recon, headers });
-  await popup.setViewportSize({ width: 420, height: 600 }); await popup.evaluate(() => { document.querySelector('details.options').open = true; }); await popup.screenshot({ path: process.env.WAX_SHOT || '/tmp/wax-popup.png', fullPage: true }); await popup.evaluate(() => { document.querySelector('details.options').open = false; });
+  await popup.setViewportSize({ width: 420, height: 600 }); await popup.evaluate(() => { document.querySelector('details.options').open = true; }); await popup.screenshot({ path: process.env.WAX_SHOT || path.join(os.tmpdir(), 'wax-popup.png'), fullPage: true }); await popup.evaluate(() => { document.querySelector('details.options').open = false; });
   assert.match(status, /Store OK/);
   assert.deepStrictEqual(headers, ['country_code','country_name','phone_number','formatted_phone','is_my_contact','saved_name','public_name','is_business','is_admin']);
   // 9 participants: minus me, minus 1 duplicate → 7 rows
