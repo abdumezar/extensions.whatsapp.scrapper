@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Whatsapp Scrapper by abdumezar",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "description": "Export the participants of the open WhatsApp Web group, community or broadcast list as a CSV. Nothing leaves your browser.",
   "minimum_chrome_version": "111",
   "permissions": ["storage", "alarms", "notifications", "contextMenus"],
