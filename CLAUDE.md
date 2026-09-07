@@ -29,9 +29,23 @@ case, comment out the others or run the file. `csv.js` and `phone.js` are dual-m
 exports to `module.exports` *and* to `globalThis`), which is what makes them requireable from node.
 
 `test/e2e.js` needs `playwright` resolvable (install it globally or set `NODE_PATH`) plus a Chromium
-channel. It hardcodes POSIX temp paths (`fs.mkdtempSync('/tmp/wax-prof-')`, screenshot at
-`/tmp/wax-popup.png` unless `WAX_SHOT` is set), so on Windows it needs `C:\tmp` to exist or those
-paths changed. It derives the extension id by scraping `chrome://extensions` shadow DOM.
+channel. Its profile and default screenshot go under `os.tmpdir()` — never a bare `/tmp`, which on
+Windows resolves against whichever drive the repo sits on. It derives the extension id by scraping
+`chrome://extensions` shadow DOM.
+
+Two scripts share that harness and are not tests:
+
+```
+node scripts/screenshots.js    # regenerates docs/screenshots/ for the README
+node scripts/build-release.js  # packs dist/whatsapp-scrapper-<version>.zip
+```
+
+`scripts/screenshots.js` drives the popup and the dashboard against `scripts/demo-whatsapp.html`, a
+demo store with the same shape as the test fixture but seeded and realistic, so the shots are
+deterministic and presentable. `scripts/build-release.js` is dependency-free (node `zlib`), packs only
+`manifest.json`, `README.md`, `LICENSE.md`, `icons/` and `src/`, and fails if the manifest references a
+file it did not pack. `dist/` is gitignored — release archives are attached to the GitHub release, never
+committed.
 
 ## Architecture: three worlds, two data paths
 
@@ -137,6 +151,10 @@ an outcome, so a background preview cannot wipe the "Saved …" line.
   the language-switch handler, because `WAXI18n.apply()` resets every `data-i18n` node to its markup key.
   Layout needs no RTL rules: every inset in `popup.css` is already a logical property.
 - Vendored `src/lib/libphonenumber-max.js` is a minified third-party bundle — do not edit or reformat.
+- **Licence.** The repo is public under the PolyForm Noncommercial License 1.0.0 (`LICENSE.md`). It is
+  source-available, not OSI open source, so GitHub labels it "Other" — that is expected, not a
+  misconfiguration. Vendored files keep their own, more permissive licences; the list at the bottom of
+  `LICENSE.md` must stay true if anything is added to `src/lib/`, `src/styles/` or `src/assets/`.
 - `src/lib/*.js` must stay dependency-free of `chrome.*` so the node tests can require them.
 
 ## Popup design system

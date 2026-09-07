@@ -4,11 +4,26 @@ Chrome extension (Manifest V3) that exports the participants of the WhatsApp Web
 community or broadcast list you have open as a CSV. Everything runs inside your browser;
 nothing is uploaded anywhere.
 
+<table>
+<tr>
+<td width="50%"><img src="docs/screenshots/popup-light.png" alt="The popup in light mode: the open chat, a preview table and an Export button"></td>
+<td width="50%"><img src="docs/screenshots/popup-dark.png" alt="The same popup in dark mode"></td>
+</tr>
+</table>
+
 ## Install (unpacked)
 
-1. Open `chrome://extensions`, turn on **Developer mode** (top right).
-2. **Load unpacked** → choose this folder.
-3. Open <https://web.whatsapp.com>, open a group, click the extension icon.
+Not on the Chrome Web Store — load it yourself. It takes about a minute.
+
+1. Get the code: download the `.zip` from
+   [Releases](https://github.com/abdumezar/extensions.whatsapp.scrapper/releases/latest) and unzip it,
+   or clone this repository.
+2. Open `chrome://extensions`, turn on **Developer mode** (top right).
+3. **Load unpacked** → choose that folder (the one with `manifest.json` in it).
+4. Open <https://web.whatsapp.com>, open a group, click the extension icon.
+
+Chrome 111 or newer. There is no build step and nothing to install — the extension is plain
+JavaScript loaded straight from `manifest.json`.
 
 If the popup says *Not connected*, reload the WhatsApp tab once (the content script is injected on page load).
 
@@ -39,10 +54,25 @@ If the popup says *Not connected*, reload the WhatsApp tab once (the content scr
   dashboard. Both are also on the right-click menu of a WhatsApp tab, and both can be rebound at
   `chrome://extensions/shortcuts`.
 
+<table>
+<tr>
+<td width="33%"><img src="docs/screenshots/popup-pick-chats.png" alt="The Pick chats tab, with a community and its sub-groups"></td>
+<td width="33%"><img src="docs/screenshots/popup-options.png" alt="The Options drawer: format, filters, extra columns and presets"></td>
+<td width="33%"><img src="docs/screenshots/popup-arabic.png" alt="The popup in Arabic, laid out right-to-left"></td>
+</tr>
+<tr>
+<td align="center"><em>Pick chats</em></td>
+<td align="center"><em>Options</em></td>
+<td align="center"><em>Arabic (RTL)</em></td>
+</tr>
+</table>
+
 ## The dashboard
 
 The grid button in the popup (or Ctrl+Shift+D) opens a full-tab dashboard. It reads through the same
 WhatsApp tab the popup does — nothing here makes WhatsApp do anything the export does not already do.
+
+![The dashboard Overview: headline counts, members by calling code, joins over time](docs/screenshots/dashboard-overview.png)
 
 - **Overview** — headline counts plus where the members are and when they joined.
 - **Overlap** — pick several chats and see how many people they share, who is in every one of them, and
@@ -50,6 +80,18 @@ WhatsApp tab the popup does — nothing here makes WhatsApp do anything the expo
 - **Quality** — what is wrong with the list: no number, a number that fails validation, no name at all,
   the same person twice. Each bucket exports on its own.
 - **Communities** — the community tree with sub-group sizes, plus sub-groups whose community is not loaded.
+
+<table>
+<tr>
+<td width="50%"><img src="docs/screenshots/dashboard-overlap.png" alt="The Overlap view: a pairwise matrix of shared members"></td>
+<td width="50%"><img src="docs/screenshots/dashboard-quality.png" alt="The Quality view: rows with no number, failed validation, no name, duplicates"></td>
+</tr>
+<tr>
+<td align="center"><em>Overlap</em></td>
+<td align="center"><em>Quality</em></td>
+</tr>
+</table>
+
 - **Timeline** — joins and leaves per export or automatic check, with the running membership.
 - **Match a list** — paste numbers and see which are already members. Nothing is sent anywhere.
 - **Labels** — import a CSV of `phone,label,notes`; every later export carries the matching `label` and
@@ -57,6 +99,10 @@ WhatsApp tab the popup does — nothing here makes WhatsApp do anything the expo
 - **Alerts** — watch chats and get a desktop notification when someone joins or leaves, optionally naming
   specific numbers. Checks run in the background while a WhatsApp tab is open; with no tab open, nothing
   happens until there is one.
+
+The dashboard follows the same theme as the popup:
+
+![The dashboard in dark mode](docs/screenshots/dashboard-dark.png)
 
 ## Columns
 
@@ -147,9 +193,30 @@ node test/analytics.test.js
 node test/e2e.js        # loads the extension in Chromium against a mocked WhatsApp page
 ```
 
+The first six need nothing but node. `test/e2e.js` needs `playwright` resolvable and a Chromium
+channel. `node scripts/screenshots.js` regenerates the images in `docs/screenshots/` the same way,
+driving the popup and the dashboard against `scripts/demo-whatsapp.html` — a demo store with a
+seeded PRNG, so re-shooting yields the same picture unless the UI changed.
+
 ## Privacy and terms
 
 A participant list is personal data. Use this for groups you administer or belong to, for your own
 records. WhatsApp's terms prohibit automated collection of user data; you are responsible for how you
 use the export. The extension keeps no history, sends no telemetry and has no network access beyond
 what the WhatsApp tab already has.
+
+## Licence
+
+[PolyForm Noncommercial License 1.0.0](LICENSE.md) — free to use, modify and share for any
+**noncommercial** purpose. Personal use, hobby projects, study and research all count, and so does
+use by a charity, a school, a public research body or a government institution, whatever their
+funding.
+
+Using it to run or support a business is not covered. If you want that, ask —
+[open an issue](https://github.com/abdumezar/extensions.whatsapp.scrapper/issues) and a commercial
+licence can be arranged.
+
+The noncommercial clause means this is *source available* rather than OSI-approved open source;
+GitHub therefore labels the licence "Other". Vendored third-party files (libphonenumber-js, Roboto,
+IBM Plex Sans Arabic, the Material token layer) keep their own, more permissive licences — see the
+bottom of [LICENSE.md](LICENSE.md).
