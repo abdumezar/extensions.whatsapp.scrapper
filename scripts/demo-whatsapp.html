@@ -1,0 +1,114 @@
+<!doctype html><html><head><meta charset="utf-8"><title>WhatsApp</title></head><body>
+<div id="app"><div id="main"><header><div data-testid="conversation-info-header" role="button" title="Profile details"><span data-testid="conversation-info-header-chat-title">Cairo Founders · Announcements</span></div></header></div></div>
+<script>
+/*
+ * Demo store for the README screenshots — the same shape as
+ * test/fixtures/mock-whatsapp.html, but populated with a realistic, presentable
+ * membership so the popup preview and the dashboard charts have something to
+ * draw. Used only by scripts/screenshots.js; no test asserts on it.
+ */
+(function () {
+  const Wid = (user, server) => ({ user, server, _serialized: user + '@' + server });
+  const coll = (arr) => ({ getModelsArray: () => arr, get: (id) => arr.find((m) => m.id._serialized === (id._serialized || id)) });
+  const contact = (o) => Object.assign({ id: null, name: '', pushname: '', verifiedName: '', isBusiness: false, isEnterprise: false, isSmb: false, isAddressBookContact: false, phoneNumber: null, username: '' }, o);
+
+  // A deterministic generator, so re-shooting the screenshots yields the same picture.
+  let seed = 20260906;
+  const rnd = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+  const pick = (a) => a[Math.floor(rnd() * a.length)];
+
+  const REGIONS = [
+    { cc: '20',  len: 10, weight: 46, prefix: '10' },   // Egypt
+    { cc: '966', len: 9,  weight: 22, prefix: '5' },    // Saudi Arabia
+    { cc: '971', len: 9,  weight: 11, prefix: '5' },    // UAE
+    { cc: '1',   len: 10, weight: 7,  prefix: '415' },  // United States
+    { cc: '44',  len: 10, weight: 5,  prefix: '77' },   // United Kingdom
+    { cc: '49',  len: 11, weight: 4,  prefix: '151' },  // Germany
+    { cc: '212', len: 9,  weight: 3,  prefix: '6' },    // Morocco
+    { cc: '90',  len: 10, weight: 2,  prefix: '53' },   // Turkey
+  ];
+  const BAG = REGIONS.flatMap((r) => Array(r.weight).fill(r));
+
+  const AR_FIRST = ['أحمد', 'محمد', 'سارة', 'يوسف', 'نور', 'عمر', 'ليلى', 'خالد', 'مريم', 'حسن', 'فاطمة', 'طارق'];
+  const AR_LAST = ['مزار', 'الشريف', 'عبد الله', 'حجازي', 'المصري', 'قنديل', 'الفار', 'زكي'];
+  const LATIN_FIRST = ['Nadia', 'Omar', 'Hana', 'Karim', 'Yara', 'Tarek', 'Salma', 'Ziad', 'Dina', 'Rami', 'Laura', 'Jonas', 'Priya', 'Mateo', 'Chloe', 'Hans'];
+  const LATIN_LAST = ['Hassan', 'El-Sayed', 'Farouk', 'Mansour', 'Khalil', 'Weber', 'Müller', 'Okonkwo', 'Silva', 'Novak', 'Brennan', 'Aziz'];
+  const BIZ = ['Nile Coffee Roasters', 'Riyadh Print House', 'Delta Logistics', 'Zamalek Studio', 'Gulf Web Works', 'Maadi Bakehouse'];
+
+  const seen = new Set();
+  const number = (r) => {
+    for (;;) {
+      let n = r.prefix;
+      while (n.length < r.len) n += Math.floor(rnd() * 10);
+      const full = r.cc + n;
+      if (!seen.has(full)) { seen.add(full); return full; }
+    }
+  };
+
+  // Joins spread across ~26 months, weighted towards the recent end.
+  const NOW = Math.floor(Date.parse('2026-09-06T12:00:00Z') / 1000);
+  const MONTH = 2629800;
+  const joined = () => NOW - Math.floor(Math.pow(rnd(), 1.7) * 26 * MONTH);
+
+  const P = [];
+  const mk = (i) => {
+    const region = pick(BAG);
+    const phone = rnd() < 0.03 ? '' : number(region);           // a few LIDs with no mapping
+    const lid = Wid('7' + String(1000000 + i), 'lid');
+    const roll = rnd();
+    let c;
+    if (roll < 0.08) {
+      c = { verifiedName: pick(BIZ), isBusiness: true, isSmb: true };
+    } else if (roll < 0.42) {
+      c = { name: pick(LATIN_FIRST) + ' ' + pick(LATIN_LAST), isAddressBookContact: true, pushname: pick(LATIN_FIRST) };
+    } else if (roll < 0.72) {
+      c = { pushname: pick(AR_FIRST) + ' ' + pick(AR_LAST) };
+    } else if (roll < 0.94) {
+      c = { pushname: pick(LATIN_FIRST) + ' ' + pick(LATIN_LAST) };
+    } else {
+      c = {};                                                    // no name at all
+    }
+    if (rnd() < 0.12) c.username = (c.name || c.pushname || 'user').split(' ')[0].toLowerCase();
+    return {
+      id: lid,
+      isAdmin: i < 4,
+      isSuperAdmin: i === 0,
+      joinTime: i < 4 ? NOW - 25 * MONTH : joined(),
+      contact: contact(Object.assign({ id: lid, phoneNumber: phone ? Wid(phone, 'c.us') : null }, c)),
+    };
+  };
+  for (let i = 0; i < 184; i++) P.push(mk(i));
+  P[0].contact.name = 'Abdulrhman Mezar';
+  P[0].contact.isAddressBookContact = true;
+  P[1].contact.name = 'Nadia Hassan';
+  P[1].contact.isAddressBookContact = true;
+
+  const me = { id: Wid('999999', 'lid'), isAdmin: true, isSuperAdmin: false, joinTime: NOW - 25 * MONTH, contact: contact({ id: Wid('999999', 'lid'), phoneNumber: Wid('201000000000', 'c.us'), name: 'Me' }) };
+  P.push(me);
+
+  const gmeta = (o) => Object.assign({ isParentGroup: false, parentGroup: null, defaultSubgroup: false, generalSubgroup: false, isLidAddressingMode: true, size: 0, participants: coll([]) }, o);
+  const community = { id: Wid('120363000000000010', 'g.us'), formattedTitle: 'Cairo Founders', name: 'Cairo Founders', active: false, groupMetadata: gmeta({ isParentGroup: true, size: P.length, participants: coll(P.slice(0, 6)) }) };
+  const announce = { id: Wid('120363000000000011', 'g.us'), formattedTitle: 'Cairo Founders · Announcements', name: 'Cairo Founders · Announcements', active: true, groupMetadata: gmeta({ parentGroup: community.id, defaultSubgroup: true, size: P.length, participants: coll(P) }) };
+  const subs = [
+    { title: 'Fundraising', from: 0, to: 78 },
+    { title: 'Hiring board', from: 40, to: 132 },
+    { title: 'Cairo meetups', from: 96, to: 185 },
+  ].map((s, i) => ({
+    id: Wid('12036300000000002' + i, 'g.us'), formattedTitle: s.title, name: s.title, active: false,
+    groupMetadata: gmeta({ parentGroup: community.id, size: s.to - s.from, participants: coll(P.slice(s.from, s.to)) }),
+  }));
+  const alumni = { id: Wid('120363000000000030', 'g.us'), formattedTitle: 'Alexandria Alumni', name: 'Alexandria Alumni', active: false, groupMetadata: gmeta({ size: 61, participants: coll(P.slice(120, 181)) }) };
+  const direct = { id: Wid('201009998887', 'c.us'), formattedTitle: 'Nadia Hassan', name: 'Nadia Hassan', active: false, groupMetadata: null };
+
+  const chats = [direct, announce, community].concat(subs, [alumni]);
+  const modules = {
+    WAWebChatCollection: { ChatCollection: coll(chats) },
+    WAWebContactCollection: { ContactCollection: coll(P.map((p) => p.contact)) },
+    WAWebApiContact: { lidPnCache: {}, getPhoneNumber: () => null },
+    WAWebUserPrefsMeUser: { getMaybeMePnUser: () => Wid('201000000000', 'c.us'), getMaybeMeLidUser: () => Wid('999999', 'lid') },
+    __debug: { modulesMap: {} },
+  };
+  window.require = (n) => { if (!(n in modules)) throw new Error('no module ' + n); return modules[n]; };
+  window.Debug = { VERSION: '2.3000.1046916940' };
+})();
+</script></body></html>
